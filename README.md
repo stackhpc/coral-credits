@@ -1,2 +1,4 @@
-# azimuth-credits
-Track cloud credit usage for projects like Azimuth and Blazar
+# coral-credits
+Build a "coral reef style" fixed capacity cloud,
+cooperatively sharing community resources through interfaces
+such as: Azimuth, OpenStack Blazar and Slurm
