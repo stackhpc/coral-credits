@@ -90,3 +90,19 @@ A resource consumtion request has the following properties:
   we return when whatever date is first, when
   all credits are used or when all credits have
   expired
+
+#### Example: Azimuth platform
+
+TODO
+
+#### Example: OpenStack Blazar reservation
+
+TODO
+
+#### Example: Slurm job credits
+
+TODO
+
+#### Example: Slurm reservations
+
+TODO
