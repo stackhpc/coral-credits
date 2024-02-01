@@ -4,8 +4,9 @@ Coral Credits aims to support the building of a "coral reef style" fixed capacit
 A Coral reef style cloud involves cooperatively sharing resources
 to maximise your investiment in both people and cloud resources.
 
-Coral credits are focused on how to support sharing of resources
-using multiple interfaces such as:
+Coral credits are focused on how to support sharing of
+resources from a federated e-infrastructure (or community cloud)
+where resources are consumed via multiple interfaces such as:
 Azimuth, OpenStack Blazar and Slurm
 
 ## On-boarding Accounts, Projects and Users
@@ -18,15 +19,17 @@ or [Keycloak](https://www.keycloak.org/).
 
 Typically this means the project lead (or principal investigator)
 is responsible for ensuring the membership of the groups they
-manage in the central AAAI proxy is correct.
+manage in the central AAAI proxy are correct.
 
-Coral Credit Accounts are assocaited to a particular group
+Coral Credit Accounts are assocaited to an account,
+and access to that account is limited to a group
 defined in the central AAAI proxy. This group typically
-has access to many different resource providers.
+has access to many different resource providers,
+and often uses more than one interface to access those resources.
 
 ## Resource Class and Resource Class Hours
 
-A coral credits operator is responsible for defining
+The coral credits operators are responsible for defining
 the list of available resource classes.
 We will use the definition of resource classes used by OpenStack
 and defined in the python library
@@ -34,22 +37,22 @@ and defined in the python library
 
 ### Allocating credits to Accounts
 
-A federation manager is typically responsible to updating the
+A federation manager is typically responsible for updating the
 allocation of resource credits given to each account.
 
 A credit allocation has the following properties:
 
 * a single account it is associated with
 * a start date and an end date
-* a resource class
-* an integer amount of resource class hours
-* list of resource providers where you can consume these credits
+* credits are a dict of resource class to resource class hours
+* list of one or more resource providers
+  where you can consume these credits,
+  with the default being any resource provider
 
 To simplify the initial implementation
 no account can have overlapping credits
-for the same resource class at the
-same resource provider,
-although existing allocation can be increased
+valid for the same resource provider,
+although an existing allocation can be increased
 or decresed at any time.
 The hope is to add this support in a future,
 under the assumption any resource consumption
@@ -80,6 +83,9 @@ accepted by the coral credit system.
 A resource consumtion request has the following properties:
 
 * account
+* resources provider
+* resources consumption interface
+  (e.g. Blazar or Azimuth or Slurm)
 * user requesting the resource
 * resource footprint,
   i.e. a list of resource class and float amounts
