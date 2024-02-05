@@ -72,6 +72,13 @@ resource consumption API.
 
 Cloud credits are consumed at a specfiic Resource
 Provider. The units are resource class hours.
+The Resource Provider has to map their local view
+of an account and user into how Coral Cloud Credits
+views that account. Note this means the user reference
+given is likely specific to each resource provider,
+although the recomendation will be to use an email
+address, to make differences between resource providers
+less likely.
 
 Resource providers should create an appropriate
 resource consumption request, before allowing
@@ -86,7 +93,7 @@ A resource consumtion request has the following properties:
 * resources provider
 * resources consumption interface
   (e.g. Blazar or Azimuth or Slurm)
-* user requesting the resource
+* email address of user requesting the resource
 * resource footprint,
   i.e. a list of resource class and float amounts
 * proposed start date
@@ -231,3 +238,13 @@ Coral credits on credit allocations and consumption records
 per account, not the current usage in each service.
 Coral credis does not track if the resources are being fully
 utilized (e.g. job efficieny).
+
+## Policy
+
+Resource Providers, combined with their use of the central
+AAI proxy, must ensure users have accepted all policies
+before requesting a resource.
+
+The Coral Cloud credits admin must ensure the account PI
+has accepted all the policies for the duration of any
+credit allocation to thier account.
