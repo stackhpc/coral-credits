@@ -166,6 +166,14 @@ we could enforce that we round up credits
 to the nearer time window (e.g. 1 hour,
 or 1 working day).
 
+### Example: Many OpenStack projects, one account
+
+It is common to have one project be given separate
+openstack projects for Dev/Test, Staging and Production.
+In this case, it would be good if they all share a single
+credit account, although its clear they which openstack
+project is consuming the resources.
+
 ### Example: Slurm batch job credits
 
 You could have a single pool of credits,
