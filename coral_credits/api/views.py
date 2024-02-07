@@ -21,10 +21,17 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
 class AccountViewSet(viewsets.ViewSet):
     def list(self, request):
         queryset = models.CreditAccount.objects.all()
-        serializer = serializers.CreditAccountSerializer(queryset, many=True, context={'request': request})
+        serializer = serializers.CreditAccountSerializer(
+            queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
-        return Response({"name": account.name, "todo": "asdf!"})
+        serializer = serializers.CreditAccountSerializer(
+            account, context={'request': request})
+        data = serializer.data
+        # add extra info in
+        data["allocations"] = ["asdf"]
+        data["consumers"] = ["asdf!!"]
+        return Response(data)
