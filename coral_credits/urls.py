@@ -16,18 +16,27 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 from rest_framework import routers
 
 from coral_credits.api import views
 
+
 router = routers.DefaultRouter()
-router.register(r'resource', views.ResourceClassViewSet)
-router.register(r'allocation', views.AllocationViewSet)
+router.register(r'resource_class', views.ResourceClassViewSet)
+router.register(r'resource_provider', views.ResourceProviderViewSet)
+
+
+def status(request):
+    # Just return 204 No Content
+    return HttpResponse(status=204)
+
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
+    path('_status/', status, name='status'),
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path("admin/", admin.site.urls),

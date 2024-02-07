@@ -1,30 +1,17 @@
+from django.contrib import admin
 from rest_framework import serializers
 
 from coral_credits.api import models
+from django.contrib.auth.models import User
 
 
 class ResourceClassSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceClass
-        fields = ['name']
+        fields = ['url', 'name', 'created']
 
 
 class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProvider
-        fields = ['name', 'uuid']
-
-
-class AccountSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = models.Account
-
-
-class AllocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        models = models.Allocation
-
-
-class ConsumerSerializer(serializers.ModelSerializer):
-    class Meta:
-        models = models.Consumer
+        fields = ['url', 'name', 'created', 'email', 'info_url']

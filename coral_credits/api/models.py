@@ -1,39 +1,84 @@
+from auditlog.mixins import LogAccessMixin
+from auditlog.registry import auditlog
 from django.db import models
 
 class ResourceClass(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.name}"
+
 
 class ResourceProvider(models.Model):
-    uuid = models.UUIDField()
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
+    created = models.DateTimeField(auto_now_add=True)
+    email = models.EmailField()
+    info_url = models.URLField()
 
-class Account(models.Model):
-    uuid = models.UUIDField()
-    name = models.CharField(max_length=200)
-    contact_email = models.EmailField()
+    def __str__(self) -> str:
+        return f"{self.name}"
 
-class Allocation(models.Model):
-    uuid = models.UUIDField()
+
+class CreditAccount(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    created = models.DateTimeField(auto_now_add=True)
+    email = models.EmailField()
+
+    def __str__(self) -> str:
+        return f"{self.name}"
+
+
+class CreditAllocation(models.Model):
     name = models.CharField(max_length=200)
-    account = models.ForeignKey(Account, on_delete=models.DO_NOTHING)
-    # TODO implement resource provider limits?
+    created = models.DateTimeField(auto_now_add=True)
+    account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
     start = models.DateTimeField()
     end = models.DateTimeField()
 
-class AllocationResource(models.Model):
-    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    class Meta:
+        unique_together = (('name', 'account',),
+                           ('account', 'start'))
+
+    def __str__(self) -> str:
+        return f"{self.account} from {self.start}"
+
+
+class CreditAllocationResource(models.Model):
+    allocation = models.ForeignKey(CreditAllocation, on_delete=models.CASCADE)
     resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
-    resource_hours = models.DecimalField()
+    resource_hours = models.DecimalField(decimal_places=2, max_digits=10)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('allocation', 'resource_class',)
+
+    def __str__(self) -> str:
+        return f"{self.allocation.account} from {self.start}"
+
 
 class Consumer(models.Model):
-    uuid = models.UUIDField()
-    models.CharField(max_length=200)
-    account = models.ForeignKey(Account, on_delete=models.DO_NOTHING)
+    consume_ref = models.CharField(max_length=200)
     resource_provider = models.ForeignKey(ResourceProvider, on_delete=models.DO_NOTHING)
+    created = models.DateTimeField(auto_now_add=True)
+    account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
     start = models.DateTimeField()
     end = models.DateTimeField()
+
+    class Meta:
+        unique_together = ('consume_ref', 'resource_provider',)
+
+    def __str__(self) -> str:
+        return f"{self.consume_ref}@{self.resource_provider}"
+
 
 class ResourceConsumptionRecord(models.Model):
     consumer = models.ForeignKey(Consumer, on_delete=models.CASCADE)
     resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
-    resource_hours = models.DecimalField()
+    resource_hours = models.DecimalField(decimal_places=2, max_digits=10)
+
+    class Meta:
+        unique_together = ('consumer', 'resource_class',)
+
+    def __str__(self) -> str:
+        return f"{self.consumer} from {self.resource_class}"

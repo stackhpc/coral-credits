@@ -37,7 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "auditlog",
+    "coral_credits.api",
 ]
+
+AUDITLOG_INCLUDE_ALL_MODELS=True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
