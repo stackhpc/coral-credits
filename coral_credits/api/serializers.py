@@ -15,3 +15,10 @@ class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProvider
         fields = ['url', 'name', 'created', 'email', 'info_url']
+
+
+class CreditAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CreditAccount
+        # TOOD(johngarbutt) try add url back?
+        fields = ['url', 'name', 'email', 'created']

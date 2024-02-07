@@ -54,7 +54,7 @@ class CreditAllocationResource(models.Model):
         unique_together = ('allocation', 'resource_class',)
 
     def __str__(self) -> str:
-        return f"{self.allocation.account} from {self.start}"
+        return f"{self.resource_class} for {self.allocation}"
 
 
 class Consumer(models.Model):
