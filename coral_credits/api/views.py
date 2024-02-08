@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
@@ -107,19 +108,19 @@ class AccountViewSet(viewsets.ViewSet):
 
         # TODO(johngarbutt): add validation we have enough credits
 
-        consumer = models.Consumer.objects.create(
-            consumer_ref=request.data["consumer_ref"],
-            account=account,
-            resource_provider=resource_provider,
-            start=request.data["start"],
-            end=request.data["end"],
-        )
-
-        for resource_rec in resource_records:
-            models.ResourceConsumptionRecord.objects.create(
-                consumer=consumer,
-                resource_class=resource_rec["resource_class"],
-                resource_hours=resource_rec["resource_hours"],
+        with transaction.atomic():
+            consumer = models.Consumer.objects.create(
+                consumer_ref=request.data["consumer_ref"],
+                account=account,
+                resource_provider=resource_provider,
+                start=request.data["start"],
+                end=request.data["end"],
             )
+            for resource_rec in resource_records:
+                models.ResourceConsumptionRecord.objects.create(
+                    consumer=consumer,
+                    resource_class=resource_rec["resource_class"],
+                    resource_hours=resource_rec["resource_hours"],
+                )
 
         return self.retrieve(request, pk)
