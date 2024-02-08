@@ -47,11 +47,12 @@ class CreditAllocation(models.Model):
 class CreditAllocationResource(models.Model):
     allocation = models.ForeignKey(CreditAllocation, on_delete=models.CASCADE)
     resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
-    resource_hours = models.DecimalField(decimal_places=2, max_digits=10)
+    resource_hours = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('allocation', 'resource_class',)
+        ordering = ('allocation__start',)
 
     def __str__(self) -> str:
         return f"{self.resource_class} for {self.allocation}"
@@ -75,10 +76,11 @@ class Consumer(models.Model):
 class ResourceConsumptionRecord(models.Model):
     consumer = models.ForeignKey(Consumer, on_delete=models.CASCADE)
     resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
-    resource_hours = models.DecimalField(decimal_places=2, max_digits=10)
+    resource_hours = models.FloatField()
 
     class Meta:
         unique_together = ('consumer', 'resource_class',)
+        ordering = ('consumer__start',)
 
     def __str__(self) -> str:
         return f"{self.consumer} from {self.resource_class}"
