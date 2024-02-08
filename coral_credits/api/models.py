@@ -63,7 +63,7 @@ class CreditAllocationResource(models.Model):
 
 
 class Consumer(models.Model):
-    consume_ref = models.CharField(max_length=200)
+    consumer_ref = models.CharField(max_length=200)
     resource_provider = models.ForeignKey(ResourceProvider, on_delete=models.DO_NOTHING)
     created = models.DateTimeField(auto_now_add=True)
     account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
@@ -71,10 +71,10 @@ class Consumer(models.Model):
     end = models.DateTimeField()
 
     class Meta:
-        unique_together = ('consume_ref', 'resource_provider',)
+        unique_together = ('consumer_ref', 'resource_provider',)
 
     def __str__(self) -> str:
-        return f"{self.consume_ref}@{self.resource_provider}"
+        return f"{self.consumer_ref}@{self.resource_provider}"
 
 
 class ResourceConsumptionRecord(models.Model):

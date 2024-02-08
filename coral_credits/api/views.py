@@ -65,3 +65,61 @@ class AccountViewSet(viewsets.ViewSet):
                             resource_allocation["resource_hours_remaining"] -= float(resource_consumer["resource_hours"])
 
         return Response(account_summary)
+
+    def update(self, request, pk=None):
+        """
+        Add a resource request
+
+        Example request::
+            {
+                "consumer_ref": "vm_test42",
+                "resource_provider_id": 1,
+                "start": "2024-02-07T18:23:38Z",
+                "end": "2024-02-08T18:22:44Z",
+                "resources": [
+                    {
+                        "resource_class": {
+                            "name": "CPU"
+                        },
+                        "resource_hours": 2.0
+                    }
+                ]
+            }
+        """
+        resource_request = serializers.ConsumerRequest(data=request.data)
+        resource_request.is_valid(raise_exception=True)
+
+        rp_queryset = models.ResourceProvider.objects.all()
+        resource_provider = get_object_or_404(
+            rp_queryset, pk=request.data["resource_provider_id"])
+
+        account_queryset = models.CreditAccount.objects.all()
+        account = get_object_or_404(account_queryset, pk=pk)
+
+        resource_records = []
+        for resource in request.data["resources"]:
+            name = resource["resource_class"]["name"]
+            resource_class = models.ResourceClass.objects.get(name=name)
+            resource_records.append(dict(
+                resource_class=resource_class,
+                resource_hours=resource["resource_hours"],
+            ))
+
+        # TODO(johngarbutt): add validation we have enough credits
+
+        consumer = models.Consumer.objects.create(
+            consumer_ref=request.data["consumer_ref"],
+            account=account,
+            resource_provider=resource_provider,
+            start=request.data["start"],
+            end=request.data["end"],
+        )
+
+        for resource_rec in resource_records:
+            models.ResourceConsumptionRecord.objects.create(
+                consumer=consumer,
+                resource_class=resource_rec["resource_class"],
+                resource_hours=resource_rec["resource_hours"],
+            )
+
+        return self.retrieve(request, pk)

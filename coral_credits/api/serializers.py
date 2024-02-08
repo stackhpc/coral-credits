@@ -59,4 +59,11 @@ class Consumer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Consumer
-        fields = ['consume_ref', 'resource_provider', 'start', 'end', "resources"]
+        fields = ['consumer_ref', 'resource_provider', 'start', 'end', "resources"]
+
+
+class ConsumerRequest(serializers.Serializer):
+    consumer_ref = serializers.CharField(max_length=200)
+    resource_provider_id = serializers.IntegerField()
+    start = serializers.DateTimeField()
+    end = serializers.DateTimeField()
