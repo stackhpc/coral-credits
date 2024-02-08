@@ -29,33 +29,34 @@ class ResourceClass(serializers.ModelSerializer):
         fields = ["name"]
 
 
-class CreditAllocation(serializers.ModelSerializer):
-    class Meta:
-        model = models.CreditAllocation
-        fields = ["name", "start", "end"]
-
-
 class CreditAllocationResource(serializers.ModelSerializer):
-    allocation = CreditAllocation()
     resource_class = ResourceClass()
 
     class Meta:
         model = models.CreditAllocationResource
-        fields = ['allocation', 'resource_class', 'resource_hours']
+        fields = ['resource_class', 'resource_hours']
 
 
-class Consumer(serializers.ModelSerializer):
-    resource_provider = ResourceProviderSerializer()
+class CreditAllocation(serializers.ModelSerializer):
+    resources = CreditAllocationResource(many=True)
 
     class Meta:
-        model = models.Consumer
-        fields = ['consume_ref', 'resource_provider', 'start', 'end']
+        model = models.CreditAllocation
+        fields = ["name", "start", "end", "resources"]
 
 
 class ResourceConsumptionRecord(serializers.ModelSerializer):
-    consumer = Consumer()
     resource_class = ResourceClass()
 
     class Meta:
         model = models.ResourceConsumptionRecord
-        fields = ['consumer', 'resource_class', 'resource_hours']
+        fields = ['resource_class', 'resource_hours']
+
+
+class Consumer(serializers.ModelSerializer):
+    resource_provider = ResourceProviderSerializer()
+    resources = ResourceConsumptionRecord(many=True)
+
+    class Meta:
+        model = models.Consumer
+        fields = ['consume_ref', 'resource_provider', 'start', 'end', "resources"]

@@ -33,18 +33,18 @@ class AccountViewSet(viewsets.ViewSet):
         account_summary = serializer.data
 
         # TODO(johngarbutt) look for any during the above allocations
-        allocations_query = models.CreditAllocationResource.objects.filter(
-            allocation__account__pk=pk
+        all_allocations_query = models.CreditAllocation.objects.filter(
+            account__pk=pk
         )
-        allocations = serializers.CreditAllocationResource(
-            allocations_query, many=True
+        allocations = serializers.CreditAllocation(
+            all_allocations_query, many=True
         )
 
         # TODO(johngarbutt) look for any during the above allocations
-        consumers_query = models.ResourceConsumptionRecord.objects.filter(
-            consumer__account__pk=pk
+        consumers_query = models.Consumer.objects.filter(
+            account__pk=pk
         )
-        consumers = serializers.ResourceConsumptionRecord(
+        consumers = serializers.Consumer(
             consumers_query, many=True, context={'request': request}
         )
 
@@ -52,13 +52,16 @@ class AccountViewSet(viewsets.ViewSet):
         account_summary["consumers"] = consumers.data
 
         # add resource_hours_remaining... must be a better way!
+        # TODO(johngarbut) we don't check the dates line up!!
         for allocation in account_summary["allocations"]:
-            allocation["resource_hours_remaining"] = float(allocation["resource_hours"])
-            # if allocation
-            for consumer in account_summary["consumers"]:
-                consume_resource = consumer["resource_class"]["name"]
-                if (allocation["resource_class"]["name"] == consume_resource):
-                    allocation["resource_hours_remaining"] -= float(consumer["resource_hours"])
-            consumers = account_summary["consumers"]
+            for resource_allocation in allocation["resources"]:
+                if "resource_hours_remaining" not in resource_allocation:
+                    resource_allocation["resource_hours_remaining"] = \
+                        resource_allocation["resource_hours"]
+                for consumer in account_summary["consumers"]:
+                    for resource_consumer in consumer["resources"]:
+                        consume_resource = resource_consumer["resource_class"]["name"]
+                        if (resource_allocation["resource_class"]["name"] == consume_resource):
+                            resource_allocation["resource_hours_remaining"] -= float(resource_consumer["resource_hours"])
 
         return Response(account_summary)

@@ -45,8 +45,12 @@ class CreditAllocation(models.Model):
 
 
 class CreditAllocationResource(models.Model):
-    allocation = models.ForeignKey(CreditAllocation, on_delete=models.CASCADE)
-    resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
+    allocation = models.ForeignKey(
+        CreditAllocation, on_delete=models.CASCADE,
+        related_name="resources")
+    resource_class = models.ForeignKey(
+        ResourceClass, on_delete=models.DO_NOTHING,
+        related_name="+")
     resource_hours = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
 
@@ -74,8 +78,13 @@ class Consumer(models.Model):
 
 
 class ResourceConsumptionRecord(models.Model):
-    consumer = models.ForeignKey(Consumer, on_delete=models.CASCADE)
-    resource_class = models.ForeignKey(ResourceClass, on_delete=models.DO_NOTHING)
+    consumer = models.ForeignKey(
+        Consumer,
+        on_delete=models.CASCADE,
+        related_name="resources")
+    resource_class = models.ForeignKey(
+        ResourceClass, on_delete=models.DO_NOTHING,
+        related_name="+")
     resource_hours = models.FloatField()
 
     class Meta:
