@@ -182,6 +182,24 @@ a some amount of Coral Credits are given to
 your Slurm account, such that you can submit
 some jobs to your chosen Slurm cluster.
 
+For example, you could reserve 30 days of 1k CPU hours
+with a Slurm cluster, and if accepted those
+cloud credits are consumed from the central pool.
+If that Slurm cluster is very busy, it might not
+have any available for your selected 30 day period,
+but there might some available next month.
+With the idea that a specific federation only has
+a limited number of CPU hours available each month
+from that Slurm system, and users reserve some of
+those, on-demand, when they need need them,
+and they have not spent them on other cloud credits.
+
+Its possible that very large credit delegations
+to a slurm cluster could be used to expand the slurm
+cluster using available cloud resources, depending
+on them being from a shared pool of resources,
+such as a single OpenStack Ironic based cloud.
+
 ### Example: Slurm reservations
 
 Similar to Blazar, you could imagine building the
