@@ -164,7 +164,8 @@ To help reservations line up nicely,
 and reduce resource fragmentation,
 we could enforce that we round up credits
 to the nearer time window (e.g. 1 hour,
-or 1 working day).
+or one of three 8hr working day windows
+each day).
 
 ### Example: Many OpenStack projects, one account
 
@@ -205,6 +206,29 @@ such as a single OpenStack Ironic based cloud.
 Similar to Blazar, you could imagine building the
 option to self service Slurm reservations against
 a shared resource pool.
+
+### Example: Shared Job Queue (idea)
+
+There are various systems that could create a
+job queue that spans multiple resource providers
+(or in some cases a common interface at multiple
+providers):
+
+* https://armadaproject.io/
+* https://dirac.readthedocs.io/en/latest/index.html
+* https://kueue.sigs.k8s.io/
+* https://github.com/elixir-cloud-aai/cwl-WES
+* https://nextflow.io/
+
+Cloud credit users could be consuming cloud credits
+when they submit large groups or jobs, (or maybe the
+user trades in cloud credits for some credits on the
+shared job queue).
+
+Some "free" or "cheaper" queues could exist
+for preemtable jobs, that could help consume
+the free capacity that exists between cloud
+reservations.
 
 ### Example: Juypter Hub (idea)
 
