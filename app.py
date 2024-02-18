@@ -1,8 +1,14 @@
-from config import config
 from nest.core.app import App
-from coral_credits.examples.examples_module import ExamplesModule
 
-app = App(description="PyNest service", modules=[ExamplesModule])
+from config import config
+from coral_credits import api
+
+
+app = App(
+    description="Azimuth Cloud Credit service",
+    modules=[api.CoralCreditsModule],
+    title="Coral Cloud Credits",
+)
 
 
 @app.on_event("startup")
