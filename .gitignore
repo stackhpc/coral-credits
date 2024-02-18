@@ -71,4 +71,4 @@ context
 .python-version
 
 # don't check in localdb
-db.sqlite3
+coral_credits.db

@@ -4,3 +4,22 @@ Coral credits is a resource management system that helps build a "coral reef sty
 
 You can read more about our plans here:
 https://stackhpc.github.io/coral-credits
+
+## Development
+
+Run server locally in tox env:
+
+```bash
+tox
+. .tox/py3/bin/activate
+python3 main.py
+```
+
+Or Run service using uvicorn:
+
+```bash
+uvicorn "app:app" --host "0.0.0.0" --port "8000" --reload
+```
+
+Then go to the fastapi auto generated docs:
+http://127.0.0.1/docs
