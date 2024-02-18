@@ -10,9 +10,7 @@ https://stackhpc.github.io/coral-credits
 Run server locally in tox env:
 
 ```bash
-tox
-. .tox/py3/bin/activate
-python3 main.py
+tox -erun
 ```
 
 Or Run service using uvicorn:
