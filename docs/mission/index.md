@@ -207,6 +207,24 @@ Similar to Blazar, you could imagine building the
 option to self service Slurm reservations against
 a shared resource pool.
 
+### Example: Onboarding to Public Cloud
+
+Without care people can run up unexpected
+cloud bills. Automation to convert account
+credits into a public cloud account,
+correctly setup with spend limits,
+bringing the pre-paid credit system to
+public clouds.
+
+With all transfer of credits, care must
+be taken to ensure unused credits are
+refundable when possible, such as public
+cloud spend (where possible) is capped
+rather than pre-paid as such. Work is
+needed to understand how this works
+with JISC OCRE:
+https://www.jisc.ac.uk/ocre-cloud-framework
+
 ### Example: Shared Job Queue (idea)
 
 There are various systems that could create a
