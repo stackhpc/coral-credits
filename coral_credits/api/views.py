@@ -21,12 +21,18 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
 
 class AccountViewSet(viewsets.ViewSet):
     def list(self, request):
+        """
+        List all Credit Accounts
+        """
         queryset = models.CreditAccount.objects.all()
         serializer = serializers.CreditAccountSerializer(
             queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
+        """
+        Retreives a Credit Account Summary
+        """
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
