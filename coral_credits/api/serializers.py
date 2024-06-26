@@ -8,19 +8,19 @@ from django.contrib.auth.models import User
 class ResourceClassSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceClass
-        fields = ['url', 'name', 'created']
+        fields = ["url", "name", "created"]
 
 
 class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProvider
-        fields = ['url', 'name', 'created', 'email', 'info_url']
+        fields = ["url", "name", "created", "email", "info_url"]
 
 
 class CreditAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CreditAccount
-        fields = ['url', 'name', 'email', 'created']
+        fields = ["url", "name", "email", "created"]
 
 
 class ResourceClass(serializers.ModelSerializer):
@@ -34,7 +34,7 @@ class CreditAllocationResource(serializers.ModelSerializer):
 
     class Meta:
         model = models.CreditAllocationResource
-        fields = ['resource_class', 'resource_hours']
+        fields = ["resource_class", "resource_hours"]
 
 
 class CreditAllocation(serializers.ModelSerializer):
@@ -50,7 +50,7 @@ class ResourceConsumptionRecord(serializers.ModelSerializer):
 
     class Meta:
         model = models.ResourceConsumptionRecord
-        fields = ['resource_class', 'resource_hours']
+        fields = ["resource_class", "resource_hours"]
 
 
 class Consumer(serializers.ModelSerializer):
@@ -59,7 +59,7 @@ class Consumer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Consumer
-        fields = ['consumer_ref', 'resource_provider', 'start', 'end', "resources"]
+        fields = ["consumer_ref", "resource_provider", "start", "end", "resources"]
 
 
 class ConsumerRequest(serializers.Serializer):

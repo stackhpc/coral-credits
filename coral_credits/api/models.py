@@ -1,7 +1,9 @@
 from auditlog.mixins import LogAccessMixin
 from auditlog.registry import auditlog
 from django.db import models
+
 # TODO(tylerchristie): add allocation window in here, to simplify.
+
 
 class ResourceClass(models.Model):
     name = models.CharField(max_length=200, unique=True)
@@ -38,8 +40,13 @@ class CreditAllocation(models.Model):
     end = models.DateTimeField()
 
     class Meta:
-        unique_together = (('name', 'account',),
-                           ('account', 'start'))
+        unique_together = (
+            (
+                "name",
+                "account",
+            ),
+            ("account", "start"),
+        )
 
     def __str__(self) -> str:
         return f"{self.account} from {self.start}"
@@ -47,17 +54,20 @@ class CreditAllocation(models.Model):
 
 class CreditAllocationResource(models.Model):
     allocation = models.ForeignKey(
-        CreditAllocation, on_delete=models.CASCADE,
-        related_name="resources")
+        CreditAllocation, on_delete=models.CASCADE, related_name="resources"
+    )
     resource_class = models.ForeignKey(
-        ResourceClass, on_delete=models.DO_NOTHING,
-        related_name="+")
+        ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
+    )
     resource_hours = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('allocation', 'resource_class',)
-        ordering = ('allocation__start',)
+        unique_together = (
+            "allocation",
+            "resource_class",
+        )
+        ordering = ("allocation__start",)
 
     def __str__(self) -> str:
         return f"{self.resource_class} for {self.allocation}"
@@ -72,7 +82,10 @@ class Consumer(models.Model):
     end = models.DateTimeField()
 
     class Meta:
-        unique_together = ('consumer_ref', 'resource_provider',)
+        unique_together = (
+            "consumer_ref",
+            "resource_provider",
+        )
 
     def __str__(self) -> str:
         return f"{self.consumer_ref}@{self.resource_provider}"
@@ -80,17 +93,19 @@ class Consumer(models.Model):
 
 class ResourceConsumptionRecord(models.Model):
     consumer = models.ForeignKey(
-        Consumer,
-        on_delete=models.CASCADE,
-        related_name="resources")
+        Consumer, on_delete=models.CASCADE, related_name="resources"
+    )
     resource_class = models.ForeignKey(
-        ResourceClass, on_delete=models.DO_NOTHING,
-        related_name="+")
+        ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
+    )
     resource_hours = models.FloatField()
 
     class Meta:
-        unique_together = ('consumer', 'resource_class',)
-        ordering = ('consumer__start',)
+        unique_together = (
+            "consumer",
+            "resource_class",
+        )
+        ordering = ("consumer__start",)
 
     def __str__(self) -> str:
         return f"{self.consumer} from {self.resource_class}"
