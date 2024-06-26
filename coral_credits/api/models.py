@@ -1,6 +1,7 @@
 from auditlog.mixins import LogAccessMixin
 from auditlog.registry import auditlog
 from django.db import models
+# TODO(tylerchristie): add allocation window in here, to simplify.
 
 class ResourceClass(models.Model):
     name = models.CharField(max_length=200, unique=True)

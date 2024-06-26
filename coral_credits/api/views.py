@@ -88,6 +88,7 @@ class AccountViewSet(viewsets.ViewSet):
                         "resource_class": {
                             "name": "CPU"
                         },
+                        # TODO(tylerchristie): This should just be total amount of resource requested in reservation.
                         "resource_hours": 2.0
                     }
                 ]
