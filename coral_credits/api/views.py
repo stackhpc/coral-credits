@@ -26,7 +26,8 @@ class AccountViewSet(viewsets.ViewSet):
         """
         queryset = models.CreditAccount.objects.all()
         serializer = serializers.CreditAccountSerializer(
-            queryset, many=True, context={'request': request})
+            queryset, many=True, context={"request": request}
+        )
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
@@ -36,23 +37,18 @@ class AccountViewSet(viewsets.ViewSet):
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
-            account, context={'request': request})
+            account, context={"request": request}
+        )
         account_summary = serializer.data
 
         # TODO(johngarbutt) look for any during the above allocations
-        all_allocations_query = models.CreditAllocation.objects.filter(
-            account__pk=pk
-        )
-        allocations = serializers.CreditAllocation(
-            all_allocations_query, many=True
-        )
+        all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
+        allocations = serializers.CreditAllocation(all_allocations_query, many=True)
 
         # TODO(johngarbutt) look for any during the above allocations
-        consumers_query = models.Consumer.objects.filter(
-            account__pk=pk
-        )
+        consumers_query = models.Consumer.objects.filter(account__pk=pk)
         consumers = serializers.Consumer(
-            consumers_query, many=True, context={'request': request}
+            consumers_query, many=True, context={"request": request}
         )
 
         account_summary["allocations"] = allocations.data
@@ -63,13 +59,19 @@ class AccountViewSet(viewsets.ViewSet):
         for allocation in account_summary["allocations"]:
             for resource_allocation in allocation["resources"]:
                 if "resource_hours_remaining" not in resource_allocation:
-                    resource_allocation["resource_hours_remaining"] = \
+                    resource_allocation["resource_hours_remaining"] = (
                         resource_allocation["resource_hours"]
+                    )
                 for consumer in account_summary["consumers"]:
                     for resource_consumer in consumer["resources"]:
                         consume_resource = resource_consumer["resource_class"]["name"]
-                        if (resource_allocation["resource_class"]["name"] == consume_resource):
-                            resource_allocation["resource_hours_remaining"] -= float(resource_consumer["resource_hours"])
+                        if (
+                            resource_allocation["resource_class"]["name"]
+                            == consume_resource
+                        ):
+                            resource_allocation["resource_hours_remaining"] -= float(
+                                resource_consumer["resource_hours"]
+                            )
 
         return Response(account_summary)
 
@@ -99,7 +101,8 @@ class AccountViewSet(viewsets.ViewSet):
 
         rp_queryset = models.ResourceProvider.objects.all()
         resource_provider = get_object_or_404(
-            rp_queryset, pk=request.data["resource_provider_id"])
+            rp_queryset, pk=request.data["resource_provider_id"]
+        )
 
         account_queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(account_queryset, pk=pk)
@@ -108,10 +111,12 @@ class AccountViewSet(viewsets.ViewSet):
         for resource in request.data["resources"]:
             name = resource["resource_class"]["name"]
             resource_class = models.ResourceClass.objects.get(name=name)
-            resource_records.append(dict(
-                resource_class=resource_class,
-                resource_hours=resource["resource_hours"],
-            ))
+            resource_records.append(
+                dict(
+                    resource_class=resource_class,
+                    resource_hours=resource["resource_hours"],
+                )
+            )
 
         # TODO(johngarbutt): add validation we have enough credits
 
