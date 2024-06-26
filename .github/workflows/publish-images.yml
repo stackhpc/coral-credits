@@ -1,0 +1,36 @@
+name: Publish images
+
+on:
+  workflow_call:
+
+jobs:
+  build_push_coral_credits_image:
+    name: Build and push coral credits image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write         # needed for signing the images with GitHub OIDC Token
+      packages: write         # required for pushing container images
+      security-events: write  # required for pushing SARIF files
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate metadata for image
+        id: image-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/stackhpc/coral-credits
+          # Produce the branch name or tag and the SHA as tags
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=
