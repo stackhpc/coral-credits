@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Django API for managing resources in a fixed capacity cloud."
 readme = "README.md"
 authors = [{ name = "Tyler Christie", email = "tyler@stackhpc.com" }]
-requires-python = "3.10"
+requires-python = ">=3.10"
 
 [project.urls]
 repository = "https://github.com/stackhpc/coral-credits.git"
