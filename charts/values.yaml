@@ -14,7 +14,7 @@ livenessProbe:
   periodSeconds: 10
   failureThreshold: 1
 
-# Liveness probe for the operator
+# Startup probe for the operator
 startupProbe:
   httpGet:
     path: /_status/
