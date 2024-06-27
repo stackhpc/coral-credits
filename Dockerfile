@@ -6,8 +6,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # build into a venv we can copy across
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+RUN python3 -m venv /venv
+ENV PATH="/venv/bin:$PATH"
 
 COPY ./requirements.txt /coral-credits/requirements.txt
 RUN pip install -U pip setuptools
@@ -29,8 +29,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy across the venv
-COPY --from=build-image /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+COPY --from=build-image /venv /venv
+ENV PATH="/venv/bin:$PATH"
+
+# Copy across the app
+COPY --from=build-image /coral-credits /coral-credits
 
 # Create the user that will be used to run the app
 ENV APP_UID 1001
@@ -56,4 +59,4 @@ EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["tini", "-g", "--"]
 #TODO(tylerchristie): use gunicorn + wsgi like azimuth
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8080"]
+CMD ["python", "/coral-credits/manage.py", "runserver", "0.0.0.0:8080"]
