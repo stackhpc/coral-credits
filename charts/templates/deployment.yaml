@@ -21,7 +21,7 @@ spec:
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
           command:
           - python
-          - manage.py
+          - /coral-credits/manage.py
           - migrate
       containers:
         - name: api
