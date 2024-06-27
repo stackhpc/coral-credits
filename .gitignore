@@ -72,5 +72,4 @@ context
 
 
 # don't check in django bits
-coral_credits/settings.py
 db.sqlite3
