@@ -9,7 +9,7 @@ imagePullSecrets: []
 # Liveness probe for the operator
 livenessProbe:
   httpGet:
-    path: /healthz
+    path: /_status/
     port: 8000
   periodSeconds: 10
   failureThreshold: 1
@@ -17,7 +17,7 @@ livenessProbe:
 # Liveness probe for the operator
 startupProbe:
   httpGet:
-    path: /healthz
+    path: /_status/
     port: 8000
   periodSeconds: 10
   failureThreshold: 3
