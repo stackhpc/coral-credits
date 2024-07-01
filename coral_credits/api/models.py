@@ -1,5 +1,3 @@
-from auditlog.mixins import LogAccessMixin
-from auditlog.registry import auditlog
 from django.db import models
 
 # TODO(tylerchristie): add allocation window in here, to simplify.

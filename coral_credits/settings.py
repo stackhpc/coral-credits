@@ -65,7 +65,9 @@ ROOT_URLCONF = "coral_credits.urls"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Coral Credits API",
-    "DESCRIPTION": 'Coral credits is a resource management system that helps build a "coral reef style" fixed capacity cloud, cooperatively sharing community resources through interfaces such as: Azimuth, OpenStack Blazar and Slurm.',
+    "DESCRIPTION": 'Coral credits is a resource management system that helps build a \
+        "coral reef style" fixed capacity cloud, cooperatively sharing community \
+        resources through interfaces such as: Azimuth, OpenStack Blazar and Slurm.',
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     # OTHER SETTINGS
@@ -106,7 +108,7 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",  # noqa: E501
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",

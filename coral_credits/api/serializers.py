@@ -1,8 +1,6 @@
-from django.contrib import admin
 from rest_framework import serializers
 
 from coral_credits.api import models
-from django.contrib.auth.models import User
 
 
 class ResourceClassSerializer(serializers.HyperlinkedModelSerializer):

@@ -1,4 +1,3 @@
-from auditlog import models as auditlog_models
 from django.contrib import admin
 
 from coral_credits.api import models
