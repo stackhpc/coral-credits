@@ -15,10 +15,8 @@ helm upgrade coral-credits ./charts \
   --timeout 10m \
   --set-string image.tag=${GITHUB_SHA::7}
 
-# Wait for pod to become ready
-kubectl wait --for=condition=Ready pod -n coral-credits -l \
-"app.kubernetes.io/name=coral-credits,app.kubernetes.io/instance=coral-credits" \
---timeout=300s
+# Wait for rollout
+kubectl rollout status deployment/coral-credits -n coral-credits --timeout=300s
 
 # Port forward in the background
 kubectl port-forward -n coral-credits svc/coral-credits 8080:8080 &
