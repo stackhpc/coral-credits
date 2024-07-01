@@ -17,7 +17,8 @@ helm upgrade coral-credits ./charts \
 
 # Wait for rollout
 kubectl rollout status deployment/coral-credits -n coral-credits --timeout=300s -w
-
+# temporary, for some reason rollout doesn't wait long enough.
+sleep 20
 # Port forward in the background
 kubectl port-forward -n coral-credits svc/coral-credits 8080:8080 &
 
