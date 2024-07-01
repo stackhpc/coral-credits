@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   coral-credits:
   - apiVersion: v2
+    appVersion: 9055c85
+    created: "2024-07-01T21:36:51.737074273Z"
+    description: Helm chart for deploying the Coral Credits API.
+    digest: 2c5bcfbc2164cc0dc54ed04a3a68a17a9a5bfdc09aa3b7a65199b2d795619d36
+    name: coral-credits
+    type: application
+    urls:
+    - coral-credits-0.1.0-dev.0.add-ci-jobs.86.tgz
+    version: 0.1.0-dev.0.add-ci-jobs.86
+  - apiVersion: v2
     appVersion: c3d11f0
-    created: "2024-07-01T21:33:06.080631302Z"
+    created: "2024-07-01T21:36:51.736758586Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 0903fdcaff44445657f4077761a536530b87c0b87724764f04a198e7c3d812a9
     name: coral-credits
@@ -13,7 +23,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.85
   - apiVersion: v2
     appVersion: 3ebde05
-    created: "2024-07-01T21:33:06.080141085Z"
+    created: "2024-07-01T21:36:51.736459459Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4be6c214a45b8289e61d8e3437326707378539bb5abf6948d8239ac9f4f0a638
     name: coral-credits
@@ -23,7 +33,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.84
   - apiVersion: v2
     appVersion: 96d9003
-    created: "2024-07-01T21:33:06.079396849Z"
+    created: "2024-07-01T21:36:51.736129365Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 120fcbbceeee5147dc7b0e6ccafeb540e64a04fa8366a87cc6668cde03389d93
     name: coral-credits
@@ -33,7 +43,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.83
   - apiVersion: v2
     appVersion: a072ae0
-    created: "2024-07-01T21:33:06.078820931Z"
+    created: "2024-07-01T21:36:51.735801395Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 9dbd4147b0262b2272627fdd7ce433cd10019c6086eba925e1637aad9776fa15
     name: coral-credits
@@ -43,7 +53,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.82
   - apiVersion: v2
     appVersion: 5a3adef
-    created: "2024-07-01T21:33:06.078528815Z"
+    created: "2024-07-01T21:36:51.735458808Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: bf99585d5e7cbcd3d96a9e539b83d1bfb897637f18ce2f23b8f56e290d7f1516
     name: coral-credits
@@ -53,7 +63,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.77
   - apiVersion: v2
     appVersion: f483884
-    created: "2024-07-01T21:33:06.078218314Z"
+    created: "2024-07-01T21:36:51.735121921Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 9b2ab50dde9e3d501ceba2f26421824ea61b76de28a1ce0ad56d449edcc1cf4d
     name: coral-credits
@@ -63,7 +73,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.71
   - apiVersion: v2
     appVersion: 813fc23
-    created: "2024-07-01T21:33:06.077886923Z"
+    created: "2024-07-01T21:36:51.734463046Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: a1eaa54cd6ac8bc80ed908f6911d2d8174b38c54d5db2662e8a4ce68793b6afe
     name: coral-credits
@@ -73,7 +83,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.69
   - apiVersion: v2
     appVersion: 73cd44e
-    created: "2024-07-01T21:33:06.077579278Z"
+    created: "2024-07-01T21:36:51.733601944Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: da5e5816773be21210974d72cb3ea112801ae6d376df7e189fbe843fd5dc7e6a
     name: coral-credits
@@ -83,7 +93,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.67
   - apiVersion: v2
     appVersion: e1cacc8
-    created: "2024-07-01T21:33:06.077282592Z"
+    created: "2024-07-01T21:36:51.733297548Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: f87030e6b3a89d9dafdde4463b1f68826b557f3cfcaa09c0459f1441810383fe
     name: coral-credits
@@ -93,7 +103,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.66
   - apiVersion: v2
     appVersion: 84d4173
-    created: "2024-07-01T21:33:06.076978924Z"
+    created: "2024-07-01T21:36:51.732819588Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 6c2fbfc11eba4dee7724a5110f1c90f6e9145f6034a7aac97a8b561b24f65c43
     name: coral-credits
@@ -103,7 +113,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.65
   - apiVersion: v2
     appVersion: 9034f88
-    created: "2024-07-01T21:33:06.076412324Z"
+    created: "2024-07-01T21:36:51.732516384Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: d6c6fe8651dcd2a6fdc95b440b9a19aa59d82039320db4b6ca8049e60d9e9d2c
     name: coral-credits
@@ -113,7 +123,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.64
   - apiVersion: v2
     appVersion: ec0f316
-    created: "2024-07-01T21:33:06.076112192Z"
+    created: "2024-07-01T21:36:51.732210405Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 612d5f5e57601ddfc8a7c7a16a080d2469c4727f132160891ada0ba29afa92b7
     name: coral-credits
@@ -123,7 +133,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.63
   - apiVersion: v2
     appVersion: 7e1c386
-    created: "2024-07-01T21:33:06.075846936Z"
+    created: "2024-07-01T21:36:51.731947526Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 2c7b639b1ed71066e68c32528ad1622262632b5bf74e25eeaae6a2829ff5a59b
     name: coral-credits
@@ -133,7 +143,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.62
   - apiVersion: v2
     appVersion: 0868bc4
-    created: "2024-07-01T21:33:06.075584164Z"
+    created: "2024-07-01T21:36:51.731694135Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4731c51d1424e3e809fbac253e081282cd002d4f7d0a79ac83d43b589f015006
     name: coral-credits
@@ -143,7 +153,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.61
   - apiVersion: v2
     appVersion: dd3bba3
-    created: "2024-07-01T21:33:06.075321152Z"
+    created: "2024-07-01T21:36:51.731420225Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 1ba679382dc05633d1b90f4d55c62bbb1468edf7ac8d1113c9ebeea62530a54f
     name: coral-credits
@@ -153,7 +163,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.60
   - apiVersion: v2
     appVersion: 8d923f3
-    created: "2024-07-01T21:33:06.074996865Z"
+    created: "2024-07-01T21:36:51.731160983Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 5a2d7b9172e7880f0e8712ed259d5a12d68bb03d7fe2da8dc233b9beab986984
     name: coral-credits
@@ -163,7 +173,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.58
   - apiVersion: v2
     appVersion: 0ab917b
-    created: "2024-07-01T21:33:06.074699108Z"
+    created: "2024-07-01T21:36:51.730878087Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: a86520b1a6044586a231b4ba00c34de96f6bd397bfa45596a3b035ac1de52f17
     name: coral-credits
@@ -173,7 +183,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.57
   - apiVersion: v2
     appVersion: f1dff45
-    created: "2024-07-01T21:33:06.074439151Z"
+    created: "2024-07-01T21:36:51.730592946Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4dd4787ef42aa3620c25f74270c709c5ef998a78807ea47cfe3d13f613db49b4
     name: coral-credits
@@ -183,7 +193,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.55
   - apiVersion: v2
     appVersion: fef0b45
-    created: "2024-07-01T21:33:06.074170809Z"
+    created: "2024-07-01T21:36:51.730260738Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 99eccffc9a2c2df0e2eb4d49fa302d48b09d5a78f8f52a5ca303f25e66a4ce7f
     name: coral-credits
@@ -193,7 +203,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.54
   - apiVersion: v2
     appVersion: edcd97e
-    created: "2024-07-01T21:33:06.073911915Z"
+    created: "2024-07-01T21:36:51.729993201Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 5932b8d31911c11083716cb5971d9b6d90d9c939d4d290c1812104391272ccf2
     name: coral-credits
@@ -203,7 +213,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.53
   - apiVersion: v2
     appVersion: 1633e9a
-    created: "2024-07-01T21:33:06.073647409Z"
+    created: "2024-07-01T21:36:51.729721405Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 55a9026b7ea9452baf3f2a0b7aed2f171d41e0bd710941e66ba4c2343dd50698
     name: coral-credits
@@ -213,7 +223,7 @@ entries:
     version: 0.1.0-dev.0.add-ci-jobs.52
   - apiVersion: v2
     appVersion: cc2e15d
-    created: "2024-07-01T21:33:06.073344252Z"
+    created: "2024-07-01T21:36:51.729429713Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: f490e0d59bce934060cb11b1ae3dc945ed0536624ca45a935185c836657e4382
     name: coral-credits
@@ -221,4 +231,4 @@ entries:
     urls:
     - coral-credits-0.1.0-dev.0.add-ci-jobs.51.tgz
     version: 0.1.0-dev.0.add-ci-jobs.51
-generated: "2024-07-01T21:33:06.072898347Z"
+generated: "2024-07-01T21:36:51.729005283Z"
