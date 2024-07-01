@@ -15,9 +15,9 @@ helm upgrade coral-credits ./charts \
   --timeout 10m \
   --set-string image.tag=${GITHUB_SHA::7}
 
-# Wait for deploy to become ready
-kubectl wait --for=condition=available deployment -n coral-credits \
--l "app.kubernetes.io/name=coral-credits,app.kubernetes.io/instance=coral-credits" \
+# Wait for pod to become ready
+kubectl wait --for=condition=Ready pod -n coral-credits -l \
+"app.kubernetes.io/name=coral-credits,app.kubernetes.io/instance=coral-credits" \
 --timeout=300s
 
 # Port forward in the background
