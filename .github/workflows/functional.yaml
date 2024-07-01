@@ -23,3 +23,6 @@ jobs:
     - name: Run test
       timeout-minutes: 10
       run: tools/functional_test.sh
+    
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
