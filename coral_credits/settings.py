@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure--%%s+1^nkk97qur-52c0tbi4g(wxgtwuaau14etjrhvhqo0+i#
 DEBUG = False
 
 # In a Docker container, ALLOWED_HOSTS is always '*' - let the proxy worry about hosts
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -38,14 +38,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'django_extensions',
-    'drf_spectacular',
+    "django_extensions",
+    "drf_spectacular",
     "rest_framework",
     "auditlog",
     "coral_credits.api",
 ]
 
-AUDITLOG_INCLUDE_ALL_MODELS=True
+AUDITLOG_INCLUDE_ALL_MODELS = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -58,16 +58,16 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 ROOT_URLCONF = "coral_credits.urls"
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Coral Credits API',
-    'DESCRIPTION': 'Coral credits is a resource management system that helps build a "coral reef style" fixed capacity cloud, cooperatively sharing community resources through interfaces such as: Azimuth, OpenStack Blazar and Slurm.',
-    'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    "TITLE": "Coral Credits API",
+    "DESCRIPTION": 'Coral credits is a resource management system that helps build a "coral reef style" fixed capacity cloud, cooperatively sharing community resources through interfaces such as: Azimuth, OpenStack Blazar and Slurm.',
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
     # OTHER SETTINGS
 }
 
