@@ -3,8 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
 
-from coral_credits.api import models
-from coral_credits.api import serializers
+from coral_credits.api import models, serializers
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):
@@ -21,9 +20,7 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
 
 class AccountViewSet(viewsets.ViewSet):
     def list(self, request):
-        """
-        List all Credit Accounts
-        """
+        """List all Credit Accounts"""
         queryset = models.CreditAccount.objects.all()
         serializer = serializers.CreditAccountSerializer(
             queryset, many=True, context={"request": request}
@@ -31,9 +28,7 @@ class AccountViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        """
-        Retreives a Credit Account Summary
-        """
+        """Retreives a Credit Account Summary"""
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
@@ -67,7 +62,7 @@ class AccountViewSet(viewsets.ViewSet):
                         consume_resource = resource_consumer["resource_class"]["name"]
                         if (
                             resource_allocation["resource_class"]["name"]
-                            == consume_resource
+                            == consume_resource  # noqa: W503
                         ):
                             resource_allocation["resource_hours_remaining"] -= float(
                                 resource_consumer["resource_hours"]
@@ -76,8 +71,7 @@ class AccountViewSet(viewsets.ViewSet):
         return Response(account_summary)
 
     def update(self, request, pk=None):
-        """
-        Add a resource request
+        """Add a resource request
 
         Example request::
             {
@@ -90,7 +84,8 @@ class AccountViewSet(viewsets.ViewSet):
                         "resource_class": {
                             "name": "CPU"
                         },
-                        # TODO(tylerchristie): This should just be total amount of resource requested in reservation.
+                        # TODO(tylerchristie): This should just be total amount of
+                        # resource requested in reservation.
                         "resource_hours": 2.0
                     }
                 ]

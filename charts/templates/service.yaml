@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "coral-credits.fullname" . }}
+  labels: {{ include "coral-credits.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+    # TODO(tylerchristie): expose monitoring
+  selector: {{ include "coral-credits.selectorLabels" . | nindent 6 }}

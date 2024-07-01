@@ -1,0 +1,88 @@
+# The operator image to use
+image:
+  repository: ghcr.io/stackhpc/coral-credits
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to appVersion
+
+imagePullSecrets: []
+
+# Liveness probe for the operator
+livenessProbe:
+  httpGet:
+    path: /_status/
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Startup probe for the operator
+startupProbe:
+  httpGet:
+    path: /_status/
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Readiness probe for the operator
+readinessProbe:
+  httpGet:
+    path: /_status/
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  initialDelaySeconds: 10
+
+# Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+
+# Persistence
+persistence:
+  # The size of the PVC
+  size: 2Gi
+  # The access modes for the PVC
+  accessMode: 
+    - ReadWriteOnce
+  # The storage class to use for the PVC
+  # If not given, the default storage class is used
+  # If set to "-" then storageClassName is set to "", disabling dynamic provisioning
+  storageClass:
+  # The volume binding mode for the created PVC
+  # If not given, the default volume binding mode for the storage class is used
+  volumeBindingMode:
+  # The label selector to use to filter eligible PVs
+  # Useful if PVs have been provisioned in advance
+  selector:
+  # The name of a specific PV to bind
+  # Useful if you want to bind to a specific pre-provisioned PV
+  volumeName:
+
+
+# Container-level security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+
+# Resource requests and limits for the containers
+resources: {}
+
+# replica count
+replicaCount: 1
+
+# Service details for the api
+service:
+  type: ClusterIP
+  port: 8080
+
+# Node selector for pods
+nodeSelector: {}
+
+# Affinity rules for pods
+affinity: {}
+
+# Tolerations for pods
+tolerations: []
