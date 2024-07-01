@@ -24,6 +24,15 @@ startupProbe:
   timeoutSeconds: 3
   failureThreshold: 3
 
+# Readiness probe for the operator
+readinessProbe:
+  httpGet:
+    path: /_status/
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
 # Pod-level security context
 podSecurityContext:
   runAsNonRoot: true
