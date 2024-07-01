@@ -27,8 +27,9 @@ jobs:
     - name: Test with tox
       run: tox
 
-    - name: Generate coverage reports
-      run: tox -e cover
+    # TODO(tylerchristie): add unit tests
+    # - name: Generate coverage reports
+    #   run: tox -e cover
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v4
