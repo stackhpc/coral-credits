@@ -16,15 +16,14 @@ helm upgrade coral-credits ./charts \
   --set-string image.tag=${GITHUB_SHA::7}
 
 # Wait for rollout
-kubectl rollout status deployment/coral-credits -n coral-credits --timeout=300s
+kubectl rollout status deployment/coral-credits -n coral-credits --timeout=300s -w
 
 # Port forward in the background
 kubectl port-forward -n coral-credits svc/coral-credits 8080:8080 &
 
 # Check we get a 204 from the status endpoint
-if [ "$(curl -s -o /dev/null -w "%{http_code}" http://0.0.0.0:8080/_status/)" -eq 204 ]; then
+if [ "$(curl -s http://0.0.0.0:8080/_status/ -w "%{http_code}")" -eq 204 ]; then
     echo "Success: HTTP status code is 204."
-    exit 0
 else
     echo "Error: Expected HTTP status code 204, but got $(curl -s -o /dev/null -w "%{http_code}" http://0.0.0.0:8080/_status/)"
     exit 1
