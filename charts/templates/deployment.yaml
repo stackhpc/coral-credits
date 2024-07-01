@@ -23,6 +23,9 @@ spec:
           - python
           - /coral-credits/manage.py
           - migrate
+          volumeMounts:
+            - name: data
+              mountPath: /data
       containers:
         - name: api
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
@@ -54,4 +57,5 @@ spec:
       {{- end }}
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: {{ include "coral-credits.fullname" . }}
