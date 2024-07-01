@@ -32,7 +32,7 @@ persistence:
   size: 2Gi
   # The access modes for the PVC
   accessMode: 
-    - ReadWriteMany
+    - ReadWriteOnce
   # The storage class to use for the PVC
   # If not given, the default storage class is used
   # If set to "-" then storageClassName is set to "", disabling dynamic provisioning
