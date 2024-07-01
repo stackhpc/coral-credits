@@ -12,6 +12,7 @@ spec:
   {{- else }}
   storageClassName: {{ . }}
   {{- end }}
+  {{- end }}
   {{- with .Values.persistence.volumeBindingMode }}
   volumeBindingMode: {{ . }}
   {{- end }}
