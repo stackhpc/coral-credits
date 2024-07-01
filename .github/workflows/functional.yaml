@@ -20,9 +20,6 @@ jobs:
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@v1.9.0
 
-    # - name: Run test
-    #   timeout-minutes: 10
-    #   run: tools/functional_test.sh
-
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
+    - name: Run test
+      timeout-minutes: 10
+      run: tools/functional_test.sh
