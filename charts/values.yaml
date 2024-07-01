@@ -10,16 +10,18 @@ imagePullSecrets: []
 livenessProbe:
   httpGet:
     path: /_status/
-    port: 8080
+    port: http
   periodSeconds: 10
-  failureThreshold: 1
+  timeoutSeconds: 3
+  failureThreshold: 3
 
 # Startup probe for the operator
 startupProbe:
   httpGet:
     path: /_status/
-    port: 8080
+    port: http
   periodSeconds: 10
+  timeoutSeconds: 3
   failureThreshold: 3
 
 # Pod-level security context
