@@ -1,0 +1,6 @@
+chart: ./charts
+
+images:
+  coral-credits:
+    context: .
+    chart_path: image
