@@ -21,11 +21,16 @@ check_http_status() {
     fi
 }
 
+# Set variables
+CHART_NAME="coral-credits"
+RELEASE_NAME=$CHART_NAME
+NAMESPACE=$CHART_NAME
+
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
-helm upgrade coral-credits ./charts \
+helm upgrade $RELEASE_NAME ./charts \
   --dependency-update \
-  --namespace coral-credits \
+  --namespace $NAMESPACE \
   --create-namespace \
   --install \
   --wait \
@@ -33,9 +38,9 @@ helm upgrade coral-credits ./charts \
   --set-string image.tag=${GITHUB_SHA::7}
 
 # Wait for rollout
-kubectl rollout status deployment/coral-credits -n coral-credits --timeout=300s -w
+kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
 # Port forward in the background
-kubectl port-forward -n coral-credits svc/coral-credits 8080:8080 &
+kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME 8080:8080 &
 
 # Wait for port to be open
 echo "Waiting for port 8080 to be available..."
@@ -63,6 +68,17 @@ for i in {1..10}; do
 done
 
 echo "Failed to get correct HTTP status after 10 attempts"
+# Get pod logs on failure
+
+# Construct the selector
+SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"
+
+# Get the pod name
+POD_NAME=$(kubectl get pods -n $NAMESPACE -l $SELECTOR -o jsonpath="{.items[0].metadata.name}")
+
+# Get the logs
+kubectl logs -n $NAMESPACE $POD_NAME
+
 exit 1
 
 #TODO(tylerchristie) check more things
