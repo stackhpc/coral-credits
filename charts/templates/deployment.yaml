@@ -26,6 +26,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
       containers:
         - name: api
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
@@ -48,6 +51,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector: {{ toYaml . | nindent 8 }}
       {{- end }}
@@ -61,3 +67,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "coral-credits.fullname" . }}
+        - name: runtime-settings
+          secret:
+            secretName: {{ include "coral-credits.fullname" . }}

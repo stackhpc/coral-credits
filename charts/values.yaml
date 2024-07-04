@@ -67,6 +67,15 @@ securityContext:
     drop: [ALL]
   readOnlyRootFilesystem: true
 
+# Django settings
+settings:
+  # The Django secret key
+  # If not given, a randomly generated key will be used
+  # However this will be different on each deployment which may cause sessions to be terminated
+  secretKey:
+  # Use debug mode (recommended false in production)
+  debug: false
+
 # Resource requests and limits for the containers
 resources: {}
 

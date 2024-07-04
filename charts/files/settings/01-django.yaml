@@ -1,0 +1,2 @@
+SECRET_KEY: {{ .Values.settings.secretKey | default (randAlphaNum 64) }}
+DEBUG: {{ .Values.settings.debug }}

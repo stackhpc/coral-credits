@@ -52,7 +52,11 @@ RUN groupadd --gid $APP_GID $APP_GROUP && \
 # Don't buffer stdout and stderr as it breaks realtime logging
 ENV PYTHONUNBUFFERED 1
 
-# TODO(tylerchristie): django flexi settings  
+# Install application configuration using flexi-settings
+ENV DJANGO_SETTINGS_MODULE flexi_settings.settings
+ENV DJANGO_FLEXI_SETTINGS_ROOT /etc/coral-credits/settings.py
+COPY ./etc/coral-credits /etc/coral-credits
+RUN mkdir -p /etc/coral-credits/settings.d
 
 # By default, serve the app on port 8080 using the app user
 EXPOSE 8080
