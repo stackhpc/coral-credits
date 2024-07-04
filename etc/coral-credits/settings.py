@@ -4,7 +4,6 @@ Root settings file
 Includes settings files from a sibling directory called settings.d.
 """
 
-import os
 from pathlib import Path
 
 from flexi_settings import include, include_dir

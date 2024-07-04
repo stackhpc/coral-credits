@@ -8,6 +8,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import logging
 import os
 
 from django.core.management.utils import get_random_secret_key
@@ -16,54 +17,56 @@ from django.core.management.utils import get_random_secret_key
 DEBUG = False
 
 # In a Docker container, ALLOWED_HOSTS is always '*' - let the proxy worry about hosts
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Make sure Django interprets the script name correctly if set
-if 'SCRIPT_NAME' in os.environ:
-    FORCE_SCRIPT_NAME = os.environ['SCRIPT_NAME']
+if "SCRIPT_NAME" in os.environ:
+    FORCE_SCRIPT_NAME = os.environ["SCRIPT_NAME"]
 
 # Set a default random secret key
 # This can be overridden by files included later if desired
 SECRET_KEY = get_random_secret_key()
 
 # All logging should go to stdout/stderr to be collected
-import logging
-LOG_FORMAT = '[%(levelname)s] [%(asctime)s] [%(name)s:%(lineno)s] [%(threadName)s] %(message)s'
+
+LOG_FORMAT = (
+    "[%(levelname)s] [%(asctime)s] [%(name)s:%(lineno)s] [%(threadName)s] %(message)s"
+)
 LOGGING = {
-    'version' : 1,
-    'disable_existing_loggers' : False,
-    'formatters' : {
-        'default' : {
-            'format' : LOG_FORMAT,
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": LOG_FORMAT,
         },
     },
-    'filters' : {
+    "filters": {
         # Logging filter that only accepts records with a level < WARNING
         # This allows us to log level >= WARNING to stderr and level < WARNING to stdout
-        'less_than_warning' : {
-            '()': 'django.utils.log.CallbackFilter',
-            'callback': lambda record: record.levelno < logging.WARNING,
+        "less_than_warning": {
+            "()": "django.utils.log.CallbackFilter",
+            "callback": lambda record: record.levelno < logging.WARNING,
         },
     },
-    'handlers' : {
-        'stdout' : {
-            'class' : 'logging.StreamHandler',
-            'stream' : 'ext://sys.stdout',
-            'formatter' : 'default',
-            'filters': ['less_than_warning'],
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "default",
+            "filters": ["less_than_warning"],
         },
-        'stderr' : {
-            'class' : 'logging.StreamHandler',
-            'stream' : 'ext://sys.stderr',
-            'formatter' : 'default',
-            'level' : 'WARNING',
+        "stderr": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+            "formatter": "default",
+            "level": "WARNING",
         },
     },
-    'loggers' : {
-        '' : {
-            'handlers' : ['stdout', 'stderr'],
-            'level' : 'DEBUG' if DEBUG else 'INFO',
-            'propogate' : True,
+    "loggers": {
+        "": {
+            "handlers": ["stdout", "stderr"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propogate": True,
         },
     },
 }
