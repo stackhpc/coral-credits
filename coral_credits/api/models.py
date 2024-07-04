@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 # TODO(tylerchristie): add allocation window in here, to simplify.
 
@@ -92,12 +93,21 @@ class CreditAllocationResource(models.Model):
 
 class Consumer(models.Model):
     consumer_ref = models.CharField(max_length=200)
+    consumer_uuid = models.UUIDField()
     resource_provider_account = models.ForeignKey(ResourceProviderAccount, on_delete=models.DO_NOTHING)
+    user_ref = models.UUIDField()
     created = models.DateTimeField(auto_now_add=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
 
     class Meta:
+        # TODO(tylerchristie): allow either/or nullable? 
+        # constraints = [
+        #     models.CheckConstraint(
+        #         check=Q(consumer_ref=False) | Q(consumer_uuid=False),
+        #         name='not_both_null'
+        #     )
+        # ]
         unique_together = (
             "consumer_ref",
             "resource_provider_account",
