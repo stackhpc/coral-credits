@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, viewsets
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 
 from coral_credits.api import models
@@ -75,6 +77,7 @@ class AccountViewSet(viewsets.ViewSet):
 
         return Response(account_summary)
 
+    @transaction.atomic
     def create(self, request, pk=None):
         """
         Process a request for a reservation.
@@ -87,38 +90,9 @@ class AccountViewSet(viewsets.ViewSet):
                 "auth_url": "https://api.example.com:5000/v3",
                 "region_name": "RegionOne"
             },
-            "current_lease": {
-                # TODO(assumptionsandg): "lease_id": "bd9f7fe2-39f0-4c05-bf9c-ff5e76cccef5"
-                "start_date": "2020-05-13T00:00:00.012345+02:00",
-                "end_time": "2020-05-14T23:59:00.012345+02:00",
-                "reservations": [
-                {
-                    "resource_type": "physical:host",
-                    "min": 1,
-                    "max": 2,
-                    "hypervisor_properties": "[]",
-                    "resource_properties": "[\"==\", \"$availability_zone\", \"az1\"]",
-                    "allocations": [
-                    {
-                        "id": "1",
-                        "hypervisor_hostname": "32af5a7a-e7a3-4883-a643-828e3f63bf54",
-                        "extra": {
-                        "availability_zone": "az1"
-                        }
-                    }
-                    # TODO(assumptionsandg): "resource_requests" : 
-                    {
-                        "vcpu" / "pcpu" : "8"
-                        "memory" : "4096" # MB ?
-                        "storage" : "30" # GB ?
-                        "storage_type" : "SSD"
-                    }
-                    ]
-                }
-                ]
-            },
             "lease": {
                 # TODO(assumptionsandg): "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
+                # TODO(assumptionsandg): "lease_name": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
                 "start_date": "2020-05-13T00:00:00.012345+02:00",
                 "end_time": "2020-05-14T23:59:00.012345+02:00",
                 "reservations": [
@@ -156,6 +130,94 @@ class AccountViewSet(viewsets.ViewSet):
             }
             }
         """
+        # Check request is valid
+        resource_request = serializers.ConsumerRequest(data=request.data, current_lease_required=False)
+        resource_request.is_valid(raise_exception=True)
+
+        context = resource_request.validated_data['context']
+        lease = resource_request.validated_data['lease']
+
+        # Match the project_id with a ResourceProviderAccount
+        try:
+            resource_provider_account = models.ResourceProviderAccount.objects.get(project_id=context['project_id'])
+        except models.ResourceProviderAccount.DoesNotExist:
+            return Response({"error": "No matching ResourceProviderAccount found"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Find all associated active CreditAllocations
+        # Make sure we only look for CreditAllocations valid for the current time
+        now = timezone.now()
+        credit_allocations = models.CreditAllocation.objects.filter(
+            account=resource_provider_account.account,
+            start__lte=now,
+            end__gte=now
+        ).order_by('-start')
+        
+        if not credit_allocations.exists():
+            return Response({"error": "No active CreditAllocation found"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Calculate lease duration
+        lease_start = timezone.make_aware(lease['start_date'])
+        lease_end = timezone.make_aware(lease['end_time'])
+        lease_duration = (lease_end - lease_start).total_seconds() / 3600  # Convert to hours
+
+        # Check resource credit availability (first check)
+        for resource_type, amount in lease['reservations']['resource_requests'].items():
+            # Check resource type requested is valid
+            resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
+            # Keep it simple, ust take min for now
+            # TODO(tylerchristie): check we can allocate max
+            # CreditAllocationResource is a record of the number of resource_hours available for 
+            # one unit of a ResourceClass, so we multiply lease_duration by units required.
+            requested_resource_hours = float(amount) * lease['reservations']['min'] * lease_duration
+            
+            for credit_allocation in credit_allocations:
+                # We know we only get one result because (allocation,resource_class) together is unique
+                credit_allocation_resource = models.CreditAllocationResource.objects.filter(
+                    allocation=credit_allocation,
+                    resource_class=resource_class
+                ).first()
+                if credit_allocation_resource:
+                    if credit_allocation_resource.resource_hours < requested_resource_hours:
+                        return Response(
+                            {"error": f"Insufficient {resource_type} credits available"},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+                else:
+                    return Response({"error": f"No credit allocated for resource_type {resource_type}"}, status=status.HTTP_403_FORBIDDEN)
+                
+        # Account has sufficient credits at time of database query, so we allocate resources
+        # Create Consumer and ResourceConsumptionRecords
+        consumer = models.Consumer.objects.create(
+            consumer_ref=lease.get('lease_name'),
+            consumer_uuid=lease.get('lease_id'),
+            resource_provider_account=resource_provider_account,
+            user_ref=context['user_id'],
+            start=lease_start,
+            end=lease_end
+        )
+        
+        for reservation in lease['reservations']:
+            for resource_type, amount in reservation['resource_type'].items():
+                # TODO(tylerchristie) remove code duplication? 
+                resource_class = models.ResourceClass.objects.get(name=resource_type)
+                resource_hours = float(amount) * reservation['min'] * lease_duration
+                
+                models.ResourceConsumptionRecord.objects.create(
+                    consumer=consumer,
+                    resource_class=resource_class,
+                    resource_hours=resource_hours
+                )
+        
+        # Final check
+        for credit_allocation_resource in models.CreditAllocationResource.objects.filter(allocation=credit_allocation):
+            if credit_allocation_resource.resource_hours < 0:
+                transaction.set_rollback(True)
+                return Response(
+                    {"error": f"Insufficient {credit_allocation_resource.resource_class.name} credits after allocation"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        return Response({"message": "Consumer and resources created successfully"}, status=status.HTTP_204_NO_CONTENT)
 
     def update(self, request, pk=None):
         """
@@ -177,6 +239,12 @@ class AccountViewSet(viewsets.ViewSet):
                     }
                 ]
             }
+
+            class ConsumerRequest(serializers.Serializer):
+                consumer_ref = serializers.CharField(max_length=200)
+                resource_provider_id = serializers.IntegerField()
+                start = serializers.DateTimeField()
+                end = serializers.DateTimeField()
         """
         resource_request = serializers.ConsumerRequest(data=request.data)
         resource_request.is_valid(raise_exception=True)
