@@ -75,6 +75,72 @@ class AccountViewSet(viewsets.ViewSet):
 
         return Response(account_summary)
 
+    def create(self, request, pk=None):
+        """
+        Process a request for a reservation.
+
+        Example (blazar) request:
+        {
+            "context": {
+                "user_id": "c631173e-dec0-4bb7-a0c3-f7711153c06c",
+                "project_id": "a0b86a98-b0d3-43cb-948e-00689182efd4",
+                "auth_url": "https://api.example.com:5000/v3",
+                "region_name": "RegionOne"
+            },
+            "current_lease": {
+                "start_date": "2020-05-13T00:00:00.012345+02:00",
+                "end_time": "2020-05-14T23:59:00.012345+02:00",
+                "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 1,
+                    "max": 2,
+                    "hypervisor_properties": "[]",
+                    "resource_properties": "[\"==\", \"$availability_zone\", \"az1\"]",
+                    "allocations": [
+                    {
+                        "id": "1",
+                        "hypervisor_hostname": "32af5a7a-e7a3-4883-a643-828e3f63bf54",
+                        "extra": {
+                        "availability_zone": "az1"
+                        }
+                    }
+                    ]
+                }
+                ]
+            },
+            "lease": {
+                "start_date": "2020-05-13T00:00:00.012345+02:00",
+                "end_time": "2020-05-14T23:59:00.012345+02:00",
+                "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 2,
+                    "max": 3,
+                    "hypervisor_properties": "[]",
+                    "resource_properties": "[\"==\", \"$availability_zone\", \"az1\"]",
+                    "allocations": [
+                    {
+                        "id": "1",
+                        "hypervisor_hostname": "32af5a7a-e7a3-4883-a643-828e3f63bf54",
+                        "extra": {
+                        "availability_zone": "az1"
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "hypervisor_hostname": "af69aabd-8386-4053-a6dd-1a983787bd7f",
+                        "extra": {
+                        "availability_zone": "az1"
+                        }
+                    }
+                    ]
+                }
+                ]
+            }
+            }
+        """
+
     def update(self, request, pk=None):
         """
         Add a resource request
