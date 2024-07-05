@@ -88,6 +88,7 @@ class AccountViewSet(viewsets.ViewSet):
                 "region_name": "RegionOne"
             },
             "current_lease": {
+                # TODO(assumptionsandg): "lease_id": "bd9f7fe2-39f0-4c05-bf9c-ff5e76cccef5"
                 "start_date": "2020-05-13T00:00:00.012345+02:00",
                 "end_time": "2020-05-14T23:59:00.012345+02:00",
                 "reservations": [
@@ -105,11 +106,19 @@ class AccountViewSet(viewsets.ViewSet):
                         "availability_zone": "az1"
                         }
                     }
+                    # TODO(assumptionsandg): "resource_requests" : 
+                    {
+                        "vcpu" / "pcpu" : "8"
+                        "memory" : "4096" # MB ?
+                        "storage" : "30" # GB ?
+                        "storage_type" : "SSD"
+                    }
                     ]
                 }
                 ]
             },
             "lease": {
+                # TODO(assumptionsandg): "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
                 "start_date": "2020-05-13T00:00:00.012345+02:00",
                 "end_time": "2020-05-14T23:59:00.012345+02:00",
                 "reservations": [
@@ -135,6 +144,13 @@ class AccountViewSet(viewsets.ViewSet):
                         }
                     }
                     ]
+                    # TODO(assumptionsandg): "resource_requests" : 
+                    {
+                        "vcpu" / "pcpu" : "8"
+                        "memory" : "4096" # MB ?
+                        "storage" : "30" # GB ?
+                        "storage_type" : "SSD"
+                    }
                 }
                 ]
             }
