@@ -209,6 +209,8 @@ class AccountViewSet(viewsets.ViewSet):
                 )
         
         # Final check
+        # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
+        # https://docs.djangoproject.com/en/5.0/ref/models/querysets/#select-for-update
         for credit_allocation_resource in models.CreditAllocationResource.objects.filter(allocation=credit_allocation):
             if credit_allocation_resource.resource_hours < 0:
                 transaction.set_rollback(True)
