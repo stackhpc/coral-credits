@@ -68,6 +68,7 @@ class ContextSerializer(serializers.Serializer):
     auth_url = serializers.URLField()
     region_name = serializers.CharField()
 
+
 class ResourceRequestSerializer(serializers.Serializer):
     # simple case ; we don't distinguish between types of cpu
     # TODO(tylerchristie) change this
@@ -76,10 +77,12 @@ class ResourceRequestSerializer(serializers.Serializer):
     storage = serializers.IntegerField(help_text="Storage in GB")
     storage_type = serializers.CharField()
 
+
 class AllocationSerializer(serializers.Serializer):
     id = serializers.CharField()
     hypervisor_hostname = serializers.UUIDField()
     extra = serializers.DictField()
+
 
 class ReservationSerializer(serializers.Serializer):
     resource_type = serializers.CharField()
@@ -87,8 +90,11 @@ class ReservationSerializer(serializers.Serializer):
     max = serializers.IntegerField()
     hypervisor_properties = serializers.CharField()
     resource_properties = serializers.CharField()
-    allocations = serializers.ListField(child=AllocationSerializer(), required=False, allow_null=True)
-    resource_requests = ResourceRequestSerializer() # TODO item
+    allocations = serializers.ListField(
+        child=AllocationSerializer(), required=False, allow_null=True
+    )
+    resource_requests = ResourceRequestSerializer()  # TODO item
+
 
 class LeaseSerializer(serializers.Serializer):
     lease_id = serializers.UUIDField()  # TODO item
@@ -96,13 +102,13 @@ class LeaseSerializer(serializers.Serializer):
     end_time = serializers.DateTimeField()
     reservations = serializers.ListField(child=ReservationSerializer())
 
+
 class ConsumerRequest(serializers.Serializer):
     def __init__(self, *args, current_lease_required=False, **kwargs):
         super().__init__(*args, **kwargs)
         # current_lease required on update but not create
-        self.fields['current_lease'] = LeaseSerializer(
-            required=current_lease_required, 
-            allow_null=(not current_lease_required)
+        self.fields["current_lease"] = LeaseSerializer(
+            required=current_lease_required, allow_null=(not current_lease_required)
         )
 
     context = ContextSerializer()
