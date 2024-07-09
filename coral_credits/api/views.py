@@ -77,11 +77,17 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     def create(self, request):
         return self._create_or_update(request)
 
-    def update(self, request, pk=None):
-        return self._create_or_update(request,current_lease_required=True)
+    def update(self, request):
+        return self._create_or_update(request, current_lease_required=True)
+    
+    def check_create(self,request):
+        return self._create_or_update(request, dry_run=True)
+    
+    def check_update(self,request):
+        return self._create_or_update(request, current_lease_required=True, dry_run=True)
     
     @transaction.atomic
-    def _create_or_update(self, request, current_lease_required=False):
+    def _create_or_update(self, request, current_lease_required=False, dry_run=False):
         """
         Process a request for a reservation.
 
@@ -272,59 +278,64 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
+        # Don't modify the database on a dry_run
+        if not dry_run:
+            # Account has sufficient credits at time of database query, so we allocate resources
+            # Update scenario
+            if current_consumer:
+                # We have CASCADE behaviour for ResourceConsumptionRecords
+                # Also we roll back all db transactions if the final check fails
+                current_consumer.delete()
 
-        # Account has sufficient credits at time of database query, so we allocate resources
-        # Update scenario
-        if current_consumer:
-            # We have CASCADE behaviour for ResourceConsumptionRecords
-            # Also we roll back all db transactions if the final check fails
-            current_consumer.delete()
+            consumer = models.Consumer.objects.create(
+                consumer_ref=lease.get("lease_name"),
+                consumer_uuid=lease.get("lease_id"),
+                resource_provider_account=resource_provider_account,
+                user_ref=context["user_id"],
+                start=lease_start,
+                end=lease_end,
+            )
 
-        consumer = models.Consumer.objects.create(
-            consumer_ref=lease.get("lease_name"),
-            consumer_uuid=lease.get("lease_id"),
-            resource_provider_account=resource_provider_account,
-            user_ref=context["user_id"],
-            start=lease_start,
-            end=lease_end,
-        )
+            for resource_type, amount in lease["reservations"]["resource_requests"].items():
+                    # TODO(tylerchristie) remove code duplication?
+                    resource_class = models.ResourceClass.objects.get(name=resource_type)
+                    resource_hours = float(amount) * lease["reservations"]["min"] * lease_duration
 
-        for resource_type, amount in lease["reservations"]["resource_requests"].items():
-                # TODO(tylerchristie) remove code duplication?
-                resource_class = models.ResourceClass.objects.get(name=resource_type)
-                resource_hours = float(amount) * lease["reservations"]["min"] * lease_duration
+                    models.ResourceConsumptionRecord.objects.create(
+                        consumer=consumer,
+                        resource_class=resource_class,
+                        resource_hours=resource_hours,
+                    )
 
-                models.ResourceConsumptionRecord.objects.create(
-                    consumer=consumer,
-                    resource_class=resource_class,
-                    resource_hours=resource_hours,
-                )
+                    # Subtract expenditure from CreditAllocationResource
+                    credit_allocation_resource = models.CreditAllocationResource.objects.filter(
+                    allocation=credit_allocation,
+                    resource_class = resource_class).update(resource_hours=F('resource_hours') - resource_hours)
 
-                # Subtract expenditure from CreditAllocationResource
-                credit_allocation_resource = models.CreditAllocationResource.objects.filter(
-                allocation=credit_allocation,
-                resource_class = resource_class).update(resource_hours=F('resource_hours') - resource_hours)
+            # Final check
+            # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
+            # https://docs.djangoproject.com/en/5.0/ref/models/querysets/#select-for-update
+            # it can block reads
+            #
+            for (
+                credit_allocation_resource
+            ) in models.CreditAllocationResource.objects.filter(
+                allocation=credit_allocation
+            ):
+                if credit_allocation_resource.resource_hours < 0:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {
+                            "error": f"Insufficient {credit_allocation_resource.resource_class.name} credits after allocation"
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
-        # Final check
-        # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
-        # https://docs.djangoproject.com/en/5.0/ref/models/querysets/#select-for-update
-        # it can block reads
-        #
-        for (
-            credit_allocation_resource
-        ) in models.CreditAllocationResource.objects.filter(
-            allocation=credit_allocation
-        ):
-            if credit_allocation_resource.resource_hours < 0:
-                transaction.set_rollback(True)
-                return Response(
-                    {
-                        "error": f"Insufficient {credit_allocation_resource.resource_class.name} credits after allocation"
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
+            return Response(
+                {"message": "Consumer and resources requested successfully"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         return Response(
-            {"message": "Consumer and resources created successfully"},
-            status=status.HTTP_204_NO_CONTENT,
-        )
+                {"message": "Account has sufficient resources to fufill request"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
