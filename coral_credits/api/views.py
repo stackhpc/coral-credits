@@ -22,15 +22,9 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
 
 
 class AccountViewSet(viewsets.ViewSet):
-    def list(self, request):
-        """
-        List all Credit Accounts
-        """
-        queryset = models.CreditAccount.objects.all()
-        serializer = serializers.CreditAccountSerializer(
-            queryset, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
+    queryset = models.CreditAccount.objects.all()
+    serializer_class = serializers.CreditAccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk=None):
         """
@@ -77,8 +71,19 @@ class AccountViewSet(viewsets.ViewSet):
 
         return Response(account_summary)
 
+class ConsumerViewSet(viewsets.ModelViewSet):
+    queryset = models.Consumer.objects.all()
+    serializer_class = serializers.ConsumerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request):
+        return self._create_or_update(request)
+
+    def update(self, request, pk=None):
+        return self._create_or_update(request)
+    
     @transaction.atomic
-    def create(self, request, pk=None):
+    def _create_or_update(self, request):
         """
         Process a request for a reservation.
 
@@ -92,7 +97,7 @@ class AccountViewSet(viewsets.ViewSet):
             },
             "lease": {
                 # TODO(assumptionsandg): "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
-                # TODO(assumptionsandg): "lease_name": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
+                # TODO(assumptionsandg): "lease_name": "my_new_lease"
                 "start_date": "2020-05-13T00:00:00.012345+02:00",
                 "end_time": "2020-05-14T23:59:00.012345+02:00",
                 "reservations": [
@@ -120,15 +125,43 @@ class AccountViewSet(viewsets.ViewSet):
                     ]
                     # TODO(assumptionsandg): "resource_requests" :
                     {
-                        "vcpu" / "pcpu" : "8"
-                        "memory" : "4096" # MB ?
-                        "storage" : "30" # GB ?
-                        "storage_type" : "SSD"
+                        # Resource request can be arbitrary, e.g.:
+                        "inventories": {
+                            "DISK_GB": {
+                                "allocation_ratio": 1.0,
+                                "max_unit": 35,
+                                "min_unit": 1,
+                                "reserved": 0,
+                                "step_size": 1,
+                                "total": 35
+                            },
+                            "MEMORY_MB": {
+                                "allocation_ratio": 1.5,
+                                "max_unit": 5825,
+                                "min_unit": 1,
+                                "reserved": 512,
+                                "step_size": 1,
+                                "total": 5825
+                            },
+                            "VCPU": {
+                                "allocation_ratio": 16.0,
+                                "max_unit": 4,
+                                "min_unit": 1,
+                                "reserved": 0,
+                                "step_size": 1,
+                                "total": 4
+                            }
+                        },
+                        "resource_provider_generation": 7
                     }
                 }
                 ]
-            }
-            }
+            },
+            "current_lease" : 
+                {
+                    # Same as above, only exists if this is an update request
+                }
+        }
         """
         # Check request is valid
         resource_request = serializers.ConsumerRequest(
@@ -234,6 +267,8 @@ class AccountViewSet(viewsets.ViewSet):
         # Final check
         # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
         # https://docs.djangoproject.com/en/5.0/ref/models/querysets/#select-for-update
+        # it can block reads
+        #
         for (
             credit_allocation_resource
         ) in models.CreditAllocationResource.objects.filter(
@@ -252,71 +287,3 @@ class AccountViewSet(viewsets.ViewSet):
             {"message": "Consumer and resources created successfully"},
             status=status.HTTP_204_NO_CONTENT,
         )
-
-    def update(self, request, pk=None):
-        """
-        Add a resource request
-
-        Example request::
-            {
-                "consumer_ref": "vm_test42",
-                "resource_provider_id": 1,
-                "start": "2024-02-07T18:23:38Z",
-                "end": "2024-02-08T18:22:44Z",
-                "resources": [
-                    {
-                        "resource_class": {
-                            "name": "CPU"
-                        },
-                        # TODO(tylerchristie): This should just be total amount of resource requested in reservation.
-                        "resource_hours": 2.0
-                    }
-                ]
-            }
-
-            class ConsumerRequest(serializers.Serializer):
-                consumer_ref = serializers.CharField(max_length=200)
-                resource_provider_id = serializers.IntegerField()
-                start = serializers.DateTimeField()
-                end = serializers.DateTimeField()
-        """
-        resource_request = serializers.ConsumerRequest(data=request.data)
-        resource_request.is_valid(raise_exception=True)
-
-        rp_queryset = models.ResourceProvider.objects.all()
-        resource_provider = get_object_or_404(
-            rp_queryset, pk=request.data["resource_provider_id"]
-        )
-
-        account_queryset = models.CreditAccount.objects.all()
-        account = get_object_or_404(account_queryset, pk=pk)
-
-        resource_records = []
-        for resource in request.data["resources"]:
-            name = resource["resource_class"]["name"]
-            resource_class = models.ResourceClass.objects.get(name=name)
-            resource_records.append(
-                dict(
-                    resource_class=resource_class,
-                    resource_hours=resource["resource_hours"],
-                )
-            )
-
-        # TODO(johngarbutt): add validation we have enough credits
-
-        with transaction.atomic():
-            consumer = models.Consumer.objects.create(
-                consumer_ref=request.data["consumer_ref"],
-                account=account,
-                resource_provider=resource_provider,
-                start=request.data["start"],
-                end=request.data["end"],
-            )
-            for resource_rec in resource_records:
-                models.ResourceConsumptionRecord.objects.create(
-                    consumer=consumer,
-                    resource_class=resource_rec["resource_class"],
-                    resource_hours=resource_rec["resource_hours"],
-                )
-
-        return self.retrieve(request, pk)
