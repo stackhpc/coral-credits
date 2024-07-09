@@ -68,14 +68,24 @@ class ContextSerializer(serializers.Serializer):
     auth_url = serializers.URLField()
     region_name = serializers.CharField()
 
+class InventorySerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        return {key: value for key, value in instance.items()}
+
+    def to_internal_value(self, data):
+        return data
+
 
 class ResourceRequestSerializer(serializers.Serializer):
-    # simple case ; we don't distinguish between types of cpu
-    # TODO(tylerchristie) change this
-    cpu = serializers.CharField(help_text="Either 'vcpu' or 'pcpu'")
-    memory = serializers.IntegerField(help_text="Memory in MB")
-    storage = serializers.IntegerField(help_text="Storage in GB")
-    storage_type = serializers.CharField()
+    inventories = InventorySerializer()
+    # TODO(tylerchristie)
+    #resource_provider_generation = serializers.IntegerField(required=False)
+
+    def to_representation(self, instance):
+        return {key: value for key, value in instance.items()}
+
+    def to_internal_value(self, data):
+        return data
 
 
 class AllocationSerializer(serializers.Serializer):
