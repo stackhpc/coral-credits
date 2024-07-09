@@ -236,9 +236,20 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             # TODO(tylerchristie): check we can allocate max
             # CreditAllocationResource is a record of the number of resource_hours available for
             # one unit of a ResourceClass, so we multiply lease_duration by units required.
-            requested_resource_hours = (
-                float(amount) * lease["reservations"]["min"] * lease_duration
-            )
+            
+            # Amount is a dict with an arbitrary format:
+            # for now we will just look for 'total'
+            try:
+                requested_resource_hours = (
+                    float(amount['total']) * lease["reservations"]["min"] * lease_duration
+                )
+            except:
+                return Response(
+                            {
+                                "error": f"Unable to recognise {resource_type} format {amount}"
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
             # Update scenario
             if current_lease_duration:
                 # Case: user requests the same resource
@@ -263,7 +274,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 if credit_allocation_resource:
                     if (
                         credit_allocation_resource.resource_hours
-                        < delta_resource_hours
+                        <= delta_resource_hours
                     ):
                         return Response(
                             {
