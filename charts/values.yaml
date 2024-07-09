@@ -75,6 +75,20 @@ settings:
   secretKey:
   # Use debug mode (recommended false in production)
   debug: false
+  # Database settings
+  database:
+    # Database engine (default: django.db.backends.sqlite3)
+    engine:
+    # Database name (default: /data/db.sqlite3)
+    name:
+    # Database user (optional)
+    user:
+    # Database password (optional)
+    password:
+    # Database host (optional)
+    host:
+    # Database port (optional)
+    port:
 
 # Resource requests and limits for the containers
 resources: {}
