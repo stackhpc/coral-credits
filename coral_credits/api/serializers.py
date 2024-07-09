@@ -66,6 +66,7 @@ class ContextSerializer(serializers.Serializer):
     auth_url = serializers.URLField()
     region_name = serializers.CharField()
 
+
 class InventorySerializer(serializers.Serializer):
     def to_representation(self, instance):
         return {key: value for key, value in instance.items()}
@@ -77,7 +78,7 @@ class InventorySerializer(serializers.Serializer):
 class ResourceRequestSerializer(serializers.Serializer):
     inventories = InventorySerializer()
     # TODO(tylerchristie)
-    #resource_provider_generation = serializers.IntegerField(required=False)
+    # resource_provider_generation = serializers.IntegerField(required=False)
 
     def to_representation(self, instance):
         return {key: value for key, value in instance.items()}

@@ -69,6 +69,7 @@ class AccountViewSet(viewsets.ViewSet):
 
         return Response(account_summary)
 
+
 class ConsumerViewSet(viewsets.ModelViewSet):
     queryset = models.Consumer.objects.all()
     serializer_class = serializers.ConsumerSerializer
@@ -79,13 +80,15 @@ class ConsumerViewSet(viewsets.ModelViewSet):
 
     def update(self, request):
         return self._create_or_update(request, current_lease_required=True)
-    
-    def check_create(self,request):
+
+    def check_create(self, request):
         return self._create_or_update(request, dry_run=True)
-    
-    def check_update(self,request):
-        return self._create_or_update(request, current_lease_required=True, dry_run=True)
-    
+
+    def check_update(self, request):
+        return self._create_or_update(
+            request, current_lease_required=True, dry_run=True
+        )
+
     @transaction.atomic
     def _create_or_update(self, request, current_lease_required=False, dry_run=False):
         """
@@ -161,7 +164,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 }
                 ]
             },
-            "current_lease" : 
+            "current_lease" :
                 {
                     # Same as above, only exists if this is an update request
                 }
@@ -180,7 +183,9 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             # If the request says it already has a lease, we look it up
             # We don't trust the request that the lease exists
             try:
-                current_consumer = get_object_or_404(models.Consumer, consumer_uuid=current_lease.get('lease_id'))
+                current_consumer = get_object_or_404(
+                    models.Consumer, consumer_uuid=current_lease.get("lease_id")
+                )
                 current_resource_requests = (
                     models.CreditAllocationResource.objects.filter(
                         consumer=current_consumer,
@@ -188,14 +193,15 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 )
                 current_lease_start = timezone.make_aware(current_consumer.start)
                 current_lease_end = timezone.make_aware(current_consumer.end)
-                current_lease_duration = (current_lease_end - current_lease_start).total_seconds() / 3600  # Convert to hours
+                current_lease_duration = (
+                    current_lease_end - current_lease_start
+                ).total_seconds() / 3600  # Convert to hours
 
             except models.Consumer.DoesNotExist:
                 return Response(
                     {"error": "No matching record found for current lease"},
-                    status=status.HTTP_403_FORBIDDEN
+                    status=status.HTTP_403_FORBIDDEN,
                 )
-            
 
         # Match the project_id with a ResourceProviderAccount
         try:
@@ -236,32 +242,36 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             # TODO(tylerchristie): check we can allocate max
             # CreditAllocationResource is a record of the number of resource_hours available for
             # one unit of a ResourceClass, so we multiply lease_duration by units required.
-            
+
             # Amount is a dict with an arbitrary format:
             # for now we will just look for 'total'
             try:
                 requested_resource_hours = (
-                    float(amount['total']) * lease["reservations"]["min"] * lease_duration
+                    float(amount["total"])
+                    * lease["reservations"]["min"]
+                    * lease_duration
                 )
             except:
                 return Response(
-                            {
-                                "error": f"Unable to recognise {resource_type} format {amount}"
-                            },
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
+                    {"error": f"Unable to recognise {resource_type} format {amount}"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             # Update scenario
             if current_lease_duration:
                 # Case: user requests the same resource
-                current_resource_request = current_resource_requests.filter(resource_class=resource_class).first()
+                current_resource_request = current_resource_requests.filter(
+                    resource_class=resource_class
+                ).first()
                 if current_resource_request:
                     current_resource_hours = current_resource_request.resource_hours
-                    delta_resource_hours = requested_resource_hours - current_resource_hours
+                    delta_resource_hours = (
+                        requested_resource_hours - current_resource_hours
+                    )
                 # Case: user requests a new resource
                 else:
                     delta_resource_hours = requested_resource_hours
             # Create scenario
-            else:  
+            else:
                 delta_resource_hours = requested_resource_hours
 
             for credit_allocation in credit_allocations:
@@ -307,21 +317,27 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 end=lease_end,
             )
 
-            for resource_type, amount in lease["reservations"]["resource_requests"].items():
-                    # TODO(tylerchristie) remove code duplication?
-                    resource_class = models.ResourceClass.objects.get(name=resource_type)
-                    resource_hours = float(amount) * lease["reservations"]["min"] * lease_duration
+            for resource_type, amount in lease["reservations"][
+                "resource_requests"
+            ].items():
+                # TODO(tylerchristie) remove code duplication?
+                resource_class = models.ResourceClass.objects.get(name=resource_type)
+                resource_hours = (
+                    float(amount) * lease["reservations"]["min"] * lease_duration
+                )
 
-                    models.ResourceConsumptionRecord.objects.create(
-                        consumer=consumer,
-                        resource_class=resource_class,
-                        resource_hours=resource_hours,
-                    )
+                models.ResourceConsumptionRecord.objects.create(
+                    consumer=consumer,
+                    resource_class=resource_class,
+                    resource_hours=resource_hours,
+                )
 
-                    # Subtract expenditure from CreditAllocationResource
-                    credit_allocation_resource = models.CreditAllocationResource.objects.filter(
-                    allocation=credit_allocation,
-                    resource_class = resource_class).update(resource_hours=F('resource_hours') - resource_hours)
+                # Subtract expenditure from CreditAllocationResource
+                credit_allocation_resource = (
+                    models.CreditAllocationResource.objects.filter(
+                        allocation=credit_allocation, resource_class=resource_class
+                    ).update(resource_hours=F("resource_hours") - resource_hours)
+                )
 
             # Final check
             # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
@@ -347,6 +363,6 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT,
             )
         return Response(
-                {"message": "Account has sufficient resources to fufill request"},
-                status=status.HTTP_204_NO_CONTENT,
-            )
+            {"message": "Account has sufficient resources to fufill request"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
