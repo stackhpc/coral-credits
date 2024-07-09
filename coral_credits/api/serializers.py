@@ -97,8 +97,8 @@ class ReservationSerializer(serializers.Serializer):
     resource_type = serializers.CharField()
     min = serializers.IntegerField()
     max = serializers.IntegerField()
-    hypervisor_properties = serializers.CharField()
-    resource_properties = serializers.CharField()
+    hypervisor_properties = serializers.CharField(required=False, allow_null=True)
+    resource_properties = serializers.CharField(required=False, allow_null=True)
     allocations = serializers.ListField(
         child=AllocationSerializer(), required=False, allow_null=True
     )
