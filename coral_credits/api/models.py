@@ -50,6 +50,7 @@ class ResourceProviderAccount(models.Model):
 
 
 class CreditAllocation(models.Model):
+    #TODO(tylerchristie): do we need a name here? 
     name = models.CharField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
     account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
