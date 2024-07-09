@@ -22,7 +22,6 @@ from rest_framework import routers
 
 from coral_credits.api import views
 
-
 router = routers.DefaultRouter()
 router.register(r"resource_class", views.ResourceClassViewSet)
 router.register(r"resource_provider", views.ResourceProviderViewSet)

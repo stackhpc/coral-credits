@@ -1,0 +1,19 @@
+SECRET_KEY: {{ .Values.settings.secretKey | default (randAlphaNum 64) }}
+DEBUG: {{ .Values.settings.debug }}
+DATABASES:
+  default:
+    ENGINE: {{ .Values.settings.database.engine | default "django.db.backends.sqlite3" }}
+    NAME: {{ .Values.settings.database.name | default "/data/db.sqlite3" }}
+    {{- if .Values.settings.database.user }}
+    USER: {{ .Values.settings.database.user }}
+    {{- end }}
+    {{- if .Values.settings.database.password }}
+    PASSWORD: {{ .Values.settings.database.password }}
+    {{- end }}
+    {{- if .Values.settings.database.host }}
+    HOST: {{ .Values.settings.database.host }}
+    {{- end }}
+    {{- if .Values.settings.database.port }}
+    PORT: {{ .Values.settings.database.port }}
+    {{- end }}
+
