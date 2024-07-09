@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coral_credits"
+version = "0.1.0"
+description = "Django API for managing resources in a fixed capacity cloud."
+readme = "README.md"
+authors = [{ name = "Tyler Christie", email = "tyler@stackhpc.com" }]
+requires-python = ">=3.10"
+
+[project.urls]
+repository = "https://github.com/stackhpc/coral-credits.git"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["coral_credits*"]

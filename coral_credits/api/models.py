@@ -1,5 +1,3 @@
-from auditlog.mixins import LogAccessMixin
-from auditlog.registry import auditlog
 from django.db import models
 from django.db.models import Q
 

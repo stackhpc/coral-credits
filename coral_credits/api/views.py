@@ -6,8 +6,7 @@ from datetime import timedelta
 from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 
-from coral_credits.api import models
-from coral_credits.api import serializers
+from coral_credits.api import models, serializers
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):
@@ -28,9 +27,7 @@ class AccountViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk=None):
-        """
-        Retreives a Credit Account Summary
-        """
+        """Retreives a Credit Account Summary"""
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
@@ -64,7 +61,7 @@ class AccountViewSet(viewsets.ViewSet):
                         consume_resource = resource_consumer["resource_class"]["name"]
                         if (
                             resource_allocation["resource_class"]["name"]
-                            == consume_resource
+                            == consume_resource  # noqa: W503
                         ):
                             resource_allocation["resource_hours_remaining"] -= float(
                                 resource_consumer["resource_hours"]
