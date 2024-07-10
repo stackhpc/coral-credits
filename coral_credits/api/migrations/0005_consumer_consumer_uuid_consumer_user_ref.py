@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+import uuid
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -12,13 +14,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="consumer",
             name="consumer_uuid",
-            field=models.UUIDField(default=""),
+            field=models.UUIDField(default=uuid.uuid4),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name="consumer",
             name="user_ref",
-            field=models.UUIDField(default=""),
+            field=models.UUIDField(default=uuid.uuid4),
             preserve_default=False,
         ),
     ]

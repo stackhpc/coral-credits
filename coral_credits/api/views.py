@@ -1,9 +1,9 @@
-from django.db import transaction
 from django.db.models import F
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
-from rest_framework import permissions, viewsets, status
+from rest_framework import permissions, status, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from coral_credits.api import models, serializers
@@ -61,7 +61,7 @@ class AccountViewSet(viewsets.ViewSet):
                         consume_resource = resource_consumer["resource_class"]["name"]
                         if (
                             resource_allocation["resource_class"]["name"]
-                            == consume_resource  # noqa: W503
+                            == consume_resource
                         ):
                             resource_allocation["resource_hours_remaining"] -= float(
                                 resource_consumer["resource_hours"]
@@ -71,9 +71,8 @@ class AccountViewSet(viewsets.ViewSet):
 
 
 class ConsumerViewSet(viewsets.ModelViewSet):
-    queryset = models.Consumer.objects.all()
-    serializer_class = serializers.ConsumerSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # TODO(tylerchristie): enable authentication
+    # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request):
         return self._create_or_update(request)
@@ -91,8 +90,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def _create_or_update(self, request, current_lease_required=False, dry_run=False):
-        """
-        Process a request for a reservation.
+        """Process a request for a reservation.
 
         Example (blazar) request:
         {
@@ -103,8 +101,8 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 "region_name": "RegionOne"
             },
             "lease": {
-                # TODO(assumptionsandg): "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
-                # TODO(assumptionsandg): "lease_name": "my_new_lease"
+                # TODO: "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
+                # TODO: "lease_name": "my_new_lease"
                 "start_date": "2020-05-13T00:00:00.012345+02:00",
                 "end_time": "2020-05-14T23:59:00.012345+02:00",
                 "reservations": [
@@ -178,6 +176,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
 
         context = resource_request.validated_data["context"]
         lease = resource_request.validated_data["lease"]
+
         if current_lease_required:
             current_lease = resource_request.validated_data["current_lease"]
             # If the request says it already has a lease, we look it up
@@ -191,11 +190,6 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                         consumer=current_consumer,
                     )
                 )
-                current_lease_start = timezone.make_aware(current_consumer.start)
-                current_lease_end = timezone.make_aware(current_consumer.end)
-                current_lease_duration = (
-                    current_lease_end - current_lease_start
-                ).total_seconds() / 3600  # Convert to hours
 
             except models.Consumer.DoesNotExist:
                 return Response(
@@ -228,86 +222,98 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             )
 
         # Calculate lease duration
-        lease_start = timezone.make_aware(lease["start_date"])
-        lease_end = timezone.make_aware(lease["end_time"])
+        lease_start = lease["start_date"]
+        lease_end = lease["end_time"]
         lease_duration = (
             lease_end - lease_start
         ).total_seconds() / 3600  # Convert to hours
 
         # Check resource credit availability (first check)
-        for resource_type, amount in lease["reservations"]["resource_requests"].items():
-            # Check resource type requested is valid
-            resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
-            # Keep it simple, ust take min for now
-            # TODO(tylerchristie): check we can allocate max
-            # CreditAllocationResource is a record of the number of resource_hours available for
-            # one unit of a ResourceClass, so we multiply lease_duration by units required.
+        for reservation in lease["reservations"]:
+            for resource_type, amount in reservation["resource_requests"][
+                "inventories"
+            ].items():
+                # Check resource type requested is valid
+                resource_class = get_object_or_404(
+                    models.ResourceClass, name=resource_type
+                )
+                # Keep it simple, ust take min for now
+                # TODO(tylerchristie): check we can allocate max
+                # CreditAllocationResource is a record of the number of resource_hours
+                # available for one unit of a ResourceClass, so we multiply
+                # lease_duration by units required.
 
-            # Amount is a dict with an arbitrary format:
-            # for now we will just look for 'total'
-            try:
-                requested_resource_hours = (
-                    float(amount["total"])
-                    * lease["reservations"]["min"]
-                    * lease_duration
-                )
-            except:
-                return Response(
-                    {"error": f"Unable to recognise {resource_type} format {amount}"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            # Update scenario
-            if current_lease_duration:
-                # Case: user requests the same resource
-                current_resource_request = current_resource_requests.filter(
-                    resource_class=resource_class
-                ).first()
-                if current_resource_request:
-                    current_resource_hours = current_resource_request.resource_hours
-                    delta_resource_hours = (
-                        requested_resource_hours - current_resource_hours
+                # Amount is a dict with an arbitrary format:
+                # for now we will just look for 'total'
+                try:
+                    requested_resource_hours = round(
+                        float(amount["total"]) * reservation["min"] * lease_duration, 1
                     )
-                # Case: user requests a new resource
-                else:
-                    delta_resource_hours = requested_resource_hours
-            # Create scenario
-            else:
-                delta_resource_hours = requested_resource_hours
-
-            for credit_allocation in credit_allocations:
-                # We know we only get one result because (allocation,resource_class) together is unique
-                credit_allocation_resource = (
-                    models.CreditAllocationResource.objects.filter(
-                        allocation=credit_allocation, resource_class=resource_class
-                    ).first()
-                )
-                if credit_allocation_resource:
-                    if (
-                        credit_allocation_resource.resource_hours
-                        <= delta_resource_hours
-                    ):
-                        return Response(
-                            {
-                                "error": f"Insufficient {resource_type} credits available"
-                            },
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
-                else:
+                except KeyError:
                     return Response(
                         {
-                            "error": f"No credit allocated for resource_type {resource_type}"
+                            "error": f"Unable to recognise {resource_type} format {amount}"  # noqa: E501
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
+                # Update scenario
+                if current_lease_required:
+                    # Case: user requests the same resource
+                    current_resource_request = current_resource_requests.filter(
+                        resource_class=resource_class
+                    ).first()
+                    if current_resource_request:
+                        current_resource_hours = current_resource_request.resource_hours
+                        delta_resource_hours = (
+                            requested_resource_hours - current_resource_hours
+                        )
+                    # Case: user requests a new resource
+                    else:
+                        delta_resource_hours = requested_resource_hours
+                # Create scenario
+                else:
+                    delta_resource_hours = requested_resource_hours
+
+                for credit_allocation in credit_allocations:
+                    # We know we only get one result because
+                    # (allocation,resource_class) together is unique
+                    credit_allocation_resource = (
+                        models.CreditAllocationResource.objects.filter(
+                            allocation=credit_allocation, resource_class=resource_class
+                        ).first()
+                    )
+                    if credit_allocation_resource:
+                        if (
+                            credit_allocation_resource.resource_hours
+                            < delta_resource_hours
+                        ):
+                            return Response(
+                                {
+                                    "error": (
+                                        f"Insufficient {resource_type} credits available. "  # noqa: E501
+                                        f"Requested:{delta_resource_hours}, "
+                                        f"Available:{credit_allocation_resource.resource_hours}"  # noqa: E501
+                                    )  # noqa: E501
+                                },
+                                status=status.HTTP_403_FORBIDDEN,
+                            )
+                    else:
+                        return Response(
+                            {
+                                "error": f"No credit allocated for resource_type {resource_type}"  # noqa: E501
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
         # Don't modify the database on a dry_run
         if not dry_run:
-            # Account has sufficient credits at time of database query, so we allocate resources
+            # Account has sufficient credits at time of database query,
+            # so we allocate resources.
+
             # Update scenario
-            if current_consumer:
+            if current_lease_required:
                 # We have CASCADE behaviour for ResourceConsumptionRecords
                 # Also we roll back all db transactions if the final check fails
                 current_consumer.delete()
-
             consumer = models.Consumer.objects.create(
                 consumer_ref=lease.get("lease_name"),
                 consumer_uuid=lease.get("lease_id"),
@@ -317,45 +323,45 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 end=lease_end,
             )
 
-            for resource_type, amount in lease["reservations"][
-                "resource_requests"
-            ].items():
-                # TODO(tylerchristie) remove code duplication?
-                resource_class = models.ResourceClass.objects.get(name=resource_type)
-                resource_hours = (
-                    float(amount) * lease["reservations"]["min"] * lease_duration
-                )
+            for reservation in lease["reservations"]:
+                for resource_type, amount in reservation["resource_requests"][
+                    "inventories"
+                ].items():
+                    # TODO(tylerchristie) remove code duplication?
+                    resource_class = models.ResourceClass.objects.get(
+                        name=resource_type
+                    )
+                    resource_hours = round(
+                        float(amount["total"]) * reservation["min"] * lease_duration, 1
+                    )
 
-                models.ResourceConsumptionRecord.objects.create(
-                    consumer=consumer,
-                    resource_class=resource_class,
-                    resource_hours=resource_hours,
-                )
+                    models.ResourceConsumptionRecord.objects.create(
+                        consumer=consumer,
+                        resource_class=resource_class,
+                        resource_hours=resource_hours,
+                    )
 
-                # Subtract expenditure from CreditAllocationResource
-                credit_allocation_resource = (
-                    models.CreditAllocationResource.objects.filter(
-                        allocation=credit_allocation, resource_class=resource_class
-                    ).update(resource_hours=F("resource_hours") - resource_hours)
-                )
+                    # Subtract expenditure from CreditAllocationResource
+                    credit_allocation_resource = (
+                        models.CreditAllocationResource.objects.filter(
+                            allocation=credit_allocation, resource_class=resource_class
+                        ).update(resource_hours=F("resource_hours") - resource_hours)
+                    )
 
             # Final check
-            # TODO(tylerchristie): is select_for_update better than optimistic concurrency?
-            # https://docs.djangoproject.com/en/5.0/ref/models/querysets/#select-for-update
-            # it can block reads
-            #
             for (
                 credit_allocation_resource
             ) in models.CreditAllocationResource.objects.filter(
                 allocation=credit_allocation
             ):
                 if credit_allocation_resource.resource_hours < 0:
-                    transaction.set_rollback(True)
-                    return Response(
-                        {
-                            "error": f"Insufficient {credit_allocation_resource.resource_class.name} credits after allocation"
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
+                    # We raise an exception so the rollback is handled
+                    raise PermissionDenied(
+                        (
+                            f"Insufficient "
+                            f"{credit_allocation_resource.resource_class.name} "
+                            f"credits after allocation."
+                        )
                     )
 
             return Response(
