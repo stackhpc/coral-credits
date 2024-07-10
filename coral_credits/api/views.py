@@ -61,7 +61,7 @@ class AccountViewSet(viewsets.ViewSet):
                         consume_resource = resource_consumer["resource_class"]["name"]
                         if (
                             resource_allocation["resource_class"]["name"]
-                            == consume_resource
+                            == consume_resource  # noqa: W503
                         ):
                             resource_allocation["resource_hours_remaining"] -= float(
                                 resource_consumer["resource_hours"]
