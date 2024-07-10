@@ -103,11 +103,12 @@ class ReservationSerializer(serializers.Serializer):
     allocations = serializers.ListField(
         child=AllocationSerializer(), required=False, allow_null=True
     )
-    resource_requests = ResourceRequestSerializer()  # TODO item
+    resource_requests = ResourceRequestSerializer()
 
 
 class LeaseSerializer(serializers.Serializer):
-    lease_id = serializers.UUIDField()  # TODO item
+    lease_id = serializers.UUIDField()
+    lease_name = serializers.CharField()
     start_date = serializers.DateTimeField()
     end_time = serializers.DateTimeField()
     reservations = serializers.ListField(child=ReservationSerializer())

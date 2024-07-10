@@ -8,7 +8,6 @@ from pathlib import Path
 
 from flexi_settings import include, include_dir
 
-
 base_dir = Path(__file__).resolve().parent
 
 # First, include the defaults

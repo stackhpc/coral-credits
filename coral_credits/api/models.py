@@ -1,5 +1,6 @@
 from django.db import models
-from django.db.models import Q
+
+# from django.db.models import Q
 
 # TODO(tylerchristie): add allocation window in here, to simplify.
 
@@ -116,7 +117,7 @@ class Consumer(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"{self.consumer_ref}@{self.resource_provider}"
+        return f"{self.consumer_ref}@{self.resource_provider_account}"
 
 
 class ResourceConsumptionRecord(models.Model):
