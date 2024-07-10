@@ -87,7 +87,6 @@ class ResourceRequestSerializer(serializers.Serializer):
         return data
 
 
-
 class AllocationSerializer(serializers.Serializer):
     id = serializers.CharField()
     hypervisor_hostname = serializers.UUIDField()
