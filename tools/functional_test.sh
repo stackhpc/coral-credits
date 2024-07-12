@@ -4,7 +4,7 @@ set -eux
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-PORT=8080
+PORT=443
 SITE=localhost
 # Function to check if port is open
 check_port() {
@@ -14,7 +14,7 @@ check_port() {
 
 # Function to check HTTP status
 check_http_status() {
-	local status=$(curl -s -o /dev/null -w "%{http_code}" http://$SITE:$PORT/_status/)
+	local status=$(curl -s -o /dev/null -w "%{http_code}" https://$SITE/_status/)
 	if [ "$status" -eq 204 ]; then
 		return 0
 	else
@@ -25,9 +25,23 @@ check_http_status() {
 
 # Set variables
 CHART_NAME="coral-credits"
+CERT_NAME="coral-secret"
 RELEASE_NAME=$CHART_NAME
 NAMESPACE=$CHART_NAME
 TEST_PASSWORD="testpassword"
+
+# Install nginx
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s
+
+# Generate self-signed certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout $CERT_NAME.key -out $CERT_NAME.crt -subj "/CN=${SITE}/O=${SITE}" -addext "subjectAltName = DNS:${SITE}"
+
+# Create cluster secret
+kubectl create secret tls $CERT_NAME --key $CERT_NAME.key --cert $CERT_NAME.crt
 
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
@@ -39,12 +53,12 @@ helm upgrade $RELEASE_NAME ./charts \
 	--wait \
 	--timeout 3m \
 	--set-string image.tag=${GITHUB_SHA::7} \
-    --set settings.superuserPassword=$TEST_PASSWORD
+    --set settings.superuserPassword=$TEST_PASSWORD \
+    --set ingress.host=$SITE \
+    --set ingress.tls.secretName=$CERT_NAME \
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
-# Port forward in the background
-kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $PORT:$PORT &
 
 # Wait for port to be open
 echo "Waiting for port $PORT to be available..."
