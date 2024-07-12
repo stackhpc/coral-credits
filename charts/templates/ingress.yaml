@@ -1,0 +1,30 @@
+{{- $ingress := .Values.ingress }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+  labels: {{ include "coral-credits.labels" . | nindent 4 }}
+  {{- $tlsAnnotations := $ingress.tls.enabled | ternary $ingress.tls.annotations dict }}
+  {{- $annotations := mergeOverwrite $ingress.annotations $tlsAnnotations }}
+  {{- with $annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "coral-credits.fullname" . }}
+                port:
+                  name: http
