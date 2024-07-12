@@ -4,7 +4,7 @@ set -eu
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-PORT=80
+PORT=443
 METRICS_PORT=8000
 SITE=localhost
 # Function to check if port is open
@@ -17,13 +17,20 @@ check_port() {
 get_http_response() {
     local endpoint="$1"
     local port="$2"
-    local response=$(curl -s -w "\n%{http_code}" "http://$SITE:$port/$endpoint")
+    local response=$(curl --insecure -s -w "\n%{http_code}" "http://$SITE:$port/$endpoint")
+    echo "$response"
+}
+
+get_https_response() {
+    local endpoint="$1"
+    local port="$2"
+    local response=$(curl --insecure -s -w "\n%{http_code}" "https://$SITE:$port/$endpoint")
     echo "$response"
 }
 
 # Function to check HTTP status for _status endpoint
 check_http_status() {
-    local response=$(get_http_response "_status/" $PORT)
+    local response=$(get_https_response "_status/" $PORT)
     local status=$(echo "$response" | tail -n1)
     local content=$(echo "$response" | sed '$d')
 
@@ -56,6 +63,7 @@ check_metrics_status() {
 
 # Set variables
 CHART_NAME="coral-credits"
+CERT_NAME="coral-secret"
 RELEASE_NAME=$CHART_NAME
 NAMESPACE=$CHART_NAME
 TEST_PASSWORD="testpassword"
@@ -67,6 +75,12 @@ kubectl wait --namespace ingress-nginx \
   --selector=app.kubernetes.io/component=controller \
   --timeout=90s
 
+# Generate self-signed certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout $CERT_NAME.key -out $CERT_NAME.crt -subj "/CN=${SITE}/O=${SITE}" -addext "subjectAltName = DNS:${SITE}"
+
+# Create cluster secret
+kubectl create secret tls $CERT_NAME --key $CERT_NAME.key --cert $CERT_NAME.crt
+
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
 helm upgrade $RELEASE_NAME ./charts \
@@ -76,10 +90,9 @@ helm upgrade $RELEASE_NAME ./charts \
 	--install \
 	--wait \
 	--timeout 3m \
-	--set-string image.tag=${GITHUB_SHA::7} \
     --set settings.superuserPassword=$TEST_PASSWORD \
     --set ingress.host=$SITE \
-    --set ingress.tls.enabled=false 
+    --set ingress.tls.secretName=$CERT_NAME \
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
@@ -124,83 +137,85 @@ CONTENT_TYPE="Content-Type: application/json"
 
 # Get a token
 echo "Getting an auth token:"
-TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+TOKEN=$(curl --insecure -s -X POST -H "$CONTENT_TYPE" -d \
     "{
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
     }" \
-    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
+    https://$SITE:$PORT/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TOKEN"
+
+echo $TOKEN
 
 AUTH_HEADER="Authorization: Bearer $TOKEN"
 
 # 1. Add a resource provider
 echo "Adding a resource provider:"
-RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+RESOURCE_PROVIDER_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Provider", 
         "email": "provider@test.com",
         "info_url": "http://testprovider.com"
     }' \
-    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
+    https://$SITE:$PORT/resource_provider/ | jq -r '.url')
 echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+VCPU_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
+MEMORY_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
+DISK_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
 echo "Adding an account:"
-ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+ACCOUNT_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    http://$SITE:$PORT/account/ | jq -r '.url')
+    https://$SITE:$PORT/account/ | jq -r '.url')
 echo "Account URL: $ACCOUNT_ID"
 
 PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
 # 4. Add a resource provider account 
 echo "Adding a resource provider account:"
-RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+RPA_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"account\": \"$ACCOUNT_ID\", 
         \"provider\": \"$RESOURCE_PROVIDER_ID\", 
         \"project_id\": \"$PROJECT_ID\"
     }" \
-    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
+    https://$SITE:$PORT/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
 START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 END_DATE=$(date -u -d "+1 day" +"%Y-%m-%dT%H:%M:%SZ")
 # 5. Add some credit allocation
 echo "Adding credit allocation:"
-ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+ALLOCATION_ID=$(curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"name\": \"Test Allocation\", 
         \"account\": \"$ACCOUNT_ID\",
         \"start\": \"$START_DATE\", 
         \"end\": \"$END_DATE\"
     }" \
-    http://$SITE:$PORT/allocation/ | jq -r '.id')
+    https://$SITE:$PORT/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
 echo "Adding allocation to resources:"
-curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+curl --insecure -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"VCPU\": 100,
         \"MEMORY_MB\": 24000,
         \"DISK_GB\": 5000
     }" \
-    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
+    https://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
-RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d "{
+RESPONSE=$(curl --insecure -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d "{
         \"context\": {
             \"user_id\": \"caa8b54a-eb5e-4134-8ae2-a3946a428ec7\",
             \"project_id\": \"$PROJECT_ID\",
@@ -227,7 +242,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             }
         }
     }" \
-    http://$SITE:$PORT/consumer/create/)
+    https://$SITE:$PORT/consumer/create/)
 
 if [ "$RESPONSE" -eq 204 ]; then
 		echo "All tests completed."
