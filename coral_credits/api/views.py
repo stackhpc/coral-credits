@@ -1,12 +1,9 @@
-from django.db.models import F
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import permissions, status, viewsets
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from coral_credits.api import models, serializers
+from coral_credits.api import models, serializers, db_utils, db_exceptions
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):
@@ -28,6 +25,7 @@ class AccountViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         """Retreives a Credit Account Summary"""
+        # TODO(tylerchristie): refactor
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
@@ -168,201 +166,73 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 }
         }
         """
-        # Check request is valid
-        resource_request = serializers.ConsumerRequest(
-            data=request.data, current_lease_required=current_lease_required
+        context, lease, current_lease = self._validate_request(
+            request, current_lease_required
         )
-        resource_request.is_valid(raise_exception=True)
-
-        context = resource_request.validated_data["context"]
-        lease = resource_request.validated_data["lease"]
 
         if current_lease_required:
-            current_lease = resource_request.validated_data["current_lease"]
-            # If the request says it already has a lease, we look it up
-            # We don't trust the request that the lease exists
             try:
-                current_consumer = get_object_or_404(
-                    models.Consumer, consumer_uuid=current_lease.get("lease_id")
+                current_consumer, current_resource_requests = (
+                    db_utils.get_current_lease(current_lease)
                 )
-                current_resource_requests = (
-                    models.CreditAllocationResource.objects.filter(
-                        consumer=current_consumer,
-                    )
-                )
-
             except models.Consumer.DoesNotExist:
-                return Response(
-                    {"error": "No matching record found for current lease"},
-                    status=status.HTTP_403_FORBIDDEN,
+                return self._http_403_forbidden(
+                    "No matching record found for current lease"
                 )
 
-        # Match the project_id with a ResourceProviderAccount
         try:
-            resource_provider_account = models.ResourceProviderAccount.objects.get(
-                project_id=context["project_id"]
+            resource_provider_account = db_utils.get_resource_provider_account(
+                context.project_id
             )
         except models.ResourceProviderAccount.DoesNotExist:
-            return Response(
-                {"error": "No matching ResourceProviderAccount found"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return self._http_403_forbidden("No matching ResourceProviderAccount found")
 
-        # Find all associated active CreditAllocations
-        # Make sure we only look for CreditAllocations valid for the current time
-        now = timezone.now()
-        credit_allocations = models.CreditAllocation.objects.filter(
-            account=resource_provider_account.account, start__lte=now, end__gte=now
-        ).order_by("-start")
+        credit_allocations = db_utils.get_credit_allocations(resource_provider_account)
 
         if not credit_allocations.exists():
-            return Response(
-                {"error": "No active CreditAllocation found"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Calculate lease duration
-        lease_start = lease["start_date"]
-        lease_end = lease["end_time"]
-        lease_duration = (
-            lease_end - lease_start
-        ).total_seconds() / 3600  # Convert to hours
+            return self._http_403_forbidden("No active CreditAllocation found")
 
         # Check resource credit availability (first check)
-        for reservation in lease["reservations"]:
-            for resource_type, amount in reservation["resource_requests"][
-                "inventories"
-            ].items():
-                # Check resource type requested is valid
-                resource_class = get_object_or_404(
-                    models.ResourceClass, name=resource_type
+        try:
+            if current_lease_required:
+                resource_requests = db_utils.get_resource_requests(
+                    lease, current_resource_requests
                 )
-                # Keep it simple, ust take min for now
-                # TODO(tylerchristie): check we can allocate max
-                # CreditAllocationResource is a record of the number of resource_hours
-                # available for one unit of a ResourceClass, so we multiply
-                # lease_duration by units required.
+            else:
+                resource_requests = db_utils.get_resource_requests(lease)
+            allocation_hours = db_utils.get_credit_allocation_resources(
+                credit_allocations, resource_requests.keys()
+            )
+            db_utils.check_credit_allocations(resource_requests, allocation_hours)
+        except db_exceptions.ResourceRequestFormatError as e:
+            # Incorrect resource request format
+            return self._http_403_forbidden(repr(e))
+        except db_exceptions.InsufficientCredits as e:
+            # Insufficient credits
+            return self._http_403_forbidden(repr(e))
+        except db_exceptions.NoCreditAllocation as e:
+            # No credit for resource class
+            return self._http_403_forbidden(repr(e))
 
-                # Amount is a dict with an arbitrary format:
-                # for now we will just look for 'total'
-                try:
-                    requested_resource_hours = round(
-                        float(amount["total"]) * reservation["min"] * lease_duration, 1
-                    )
-                except KeyError:
-                    return Response(
-                        {
-                            "error": f"Unable to recognise {resource_type} format {amount}"  # noqa: E501
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                # Update scenario
-                if current_lease_required:
-                    # Case: user requests the same resource
-                    current_resource_request = current_resource_requests.filter(
-                        resource_class=resource_class
-                    ).first()
-                    if current_resource_request:
-                        current_resource_hours = current_resource_request.resource_hours
-                        delta_resource_hours = (
-                            requested_resource_hours - current_resource_hours
-                        )
-                    # Case: user requests a new resource
-                    else:
-                        delta_resource_hours = requested_resource_hours
-                # Create scenario
-                else:
-                    delta_resource_hours = requested_resource_hours
-
-                for credit_allocation in credit_allocations:
-                    # We know we only get one result because
-                    # (allocation,resource_class) together is unique
-                    credit_allocation_resource = (
-                        models.CreditAllocationResource.objects.filter(
-                            allocation=credit_allocation, resource_class=resource_class
-                        ).first()
-                    )
-                    if credit_allocation_resource:
-                        if (
-                            credit_allocation_resource.resource_hours
-                            < delta_resource_hours
-                        ):
-                            return Response(
-                                {
-                                    "error": (
-                                        f"Insufficient {resource_type} credits available. "  # noqa: E501
-                                        f"Requested:{delta_resource_hours}, "
-                                        f"Available:{credit_allocation_resource.resource_hours}"  # noqa: E501
-                                    )  # noqa: E501
-                                },
-                                status=status.HTTP_403_FORBIDDEN,
-                            )
-                    else:
-                        return Response(
-                            {
-                                "error": f"No credit allocated for resource_type {resource_type}"  # noqa: E501
-                            },
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
         # Don't modify the database on a dry_run
         if not dry_run:
             # Account has sufficient credits at time of database query,
             # so we allocate resources.
-
-            # Update scenario
+            # Update scenario:
             if current_lease_required:
                 # We have CASCADE behaviour for ResourceConsumptionRecords
                 # Also we roll back all db transactions if the final check fails
                 current_consumer.delete()
-            consumer = models.Consumer.objects.create(
-                consumer_ref=lease.get("lease_name"),
-                consumer_uuid=lease.get("lease_id"),
-                resource_provider_account=resource_provider_account,
-                user_ref=context["user_id"],
-                start=lease_start,
-                end=lease_end,
+            db_utils.spend_credits(
+                lease,
+                resource_provider_account,
+                context,
+                resource_requests,
+                allocation_hours,
             )
 
-            for reservation in lease["reservations"]:
-                for resource_type, amount in reservation["resource_requests"][
-                    "inventories"
-                ].items():
-                    # TODO(tylerchristie) remove code duplication?
-                    resource_class = models.ResourceClass.objects.get(
-                        name=resource_type
-                    )
-                    resource_hours = round(
-                        float(amount["total"]) * reservation["min"] * lease_duration, 1
-                    )
-
-                    models.ResourceConsumptionRecord.objects.create(
-                        consumer=consumer,
-                        resource_class=resource_class,
-                        resource_hours=resource_hours,
-                    )
-
-                    # Subtract expenditure from CreditAllocationResource
-                    credit_allocation_resource = (
-                        models.CreditAllocationResource.objects.filter(
-                            allocation=credit_allocation, resource_class=resource_class
-                        ).update(resource_hours=F("resource_hours") - resource_hours)
-                    )
-
             # Final check
-            for (
-                credit_allocation_resource
-            ) in models.CreditAllocationResource.objects.filter(
-                allocation=credit_allocation
-            ):
-                if credit_allocation_resource.resource_hours < 0:
-                    # We raise an exception so the rollback is handled
-                    raise PermissionDenied(
-                        (
-                            f"Insufficient "
-                            f"{credit_allocation_resource.resource_class.name} "
-                            f"credits after allocation."
-                        )
-                    )
+            db_utils.check_credit_balance(credit_allocations, resource_requests)
 
             return Response(
                 {"message": "Consumer and resources requested successfully"},
@@ -371,4 +241,22 @@ class ConsumerViewSet(viewsets.ModelViewSet):
         return Response(
             {"message": "Account has sufficient resources to fufill request"},
             status=status.HTTP_204_NO_CONTENT,
+        )
+
+    def _validate_request(self, request, current_lease_required):
+        resource_request = serializers.ConsumerRequestSerializer(
+            data=request.data, current_lease_required=current_lease_required
+        )
+        resource_request.is_valid(raise_exception=True)
+        consumer_request = resource_request.create(resource_request.validated_data)
+        return (
+            consumer_request.context,
+            consumer_request.lease,
+            consumer_request.current_lease,
+        )
+
+    def _http_403_forbidden(self, msg):
+        return Response(
+            {"error": msg},
+            status=status.HTTP_403_FORBIDDEN,
         )
