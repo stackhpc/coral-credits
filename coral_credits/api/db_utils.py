@@ -1,8 +1,7 @@
-from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from coral_credits.api import models, db_exceptions
+from coral_credits.api import db_exceptions, models
 
 
 def get_current_lease(current_lease):
@@ -34,8 +33,8 @@ def get_credit_allocations(resource_provider_account):
 
 
 def get_credit_allocation_resources(credit_allocations, resource_classes):
-    """
-    Returns a dictionary of the form:
+    """Returns a dictionary of the form:
+
     {
         "resource_class": "credit_resource_allocation"
     }
@@ -55,8 +54,8 @@ def get_credit_allocation_resources(credit_allocations, resource_classes):
 
 
 def get_resource_requests(lease, current_resource_requests=None):
-    """
-    Returns a dictionary of the form:
+    """Returns a dictionary of the form:
+
     {
         "resource_class": "resource_hours"
     }
@@ -113,9 +112,11 @@ def calculate_delta_resource_hours(
 
 
 def check_credit_allocations(resource_requests, credit_allocations):
+    """Subtracts resources requested from credit allocations.
+
+    Fails if any result is negative.
     """
-    Subtracts resources requested from credit allocations and ensures all results are non-negative.
-    """
+
     result = {}
     for resource_class in credit_allocations:
         result[resource_class] = (

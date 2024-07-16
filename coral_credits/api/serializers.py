@@ -1,7 +1,15 @@
 from rest_framework import serializers
 
 from coral_credits.api import models
-from coral_credits.api.business_objects import *
+from coral_credits.api.business_objects import (
+    Allocation,
+    ConsumerRequest,
+    Context,
+    Inventory,
+    Lease,
+    Reservation,
+    ResourceRequest,
+)
 
 
 class ResourceClassSerializer(serializers.HyperlinkedModelSerializer):

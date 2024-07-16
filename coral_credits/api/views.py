@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
-from coral_credits.api import models, serializers, db_utils, db_exceptions
+from coral_credits.api import db_exceptions, db_utils, models, serializers
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):

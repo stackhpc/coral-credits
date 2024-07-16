@@ -1,13 +1,14 @@
 import json
-from datetime import datetime, timedelta
 import uuid
+from datetime import datetime, timedelta
 
-import coral_credits.api.models as models
 from django.urls import reverse
 from django.utils.timezone import make_aware
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
+
+import coral_credits.api.models as models
 
 PROJECT_ID = "20354d7a-e4fe-47af-8ff6-187bca92f3f9"
 USER_REF = "caa8b54a-eb5e-4134-8ae2-a3946a428ec7"
