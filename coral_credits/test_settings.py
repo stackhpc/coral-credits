@@ -49,7 +49,6 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -78,8 +77,6 @@ DEBUG = False
 
 # In a Docker container, ALLOWED_HOSTS is always '*' - let the proxy worry about hosts
 ALLOWED_HOSTS = ["*"]
-
-CSRF_TRUSTED_ORIGINS = ["http://*","https://*"]
 
 # Make sure Django interprets the script name correctly if set
 if "SCRIPT_NAME" in os.environ:

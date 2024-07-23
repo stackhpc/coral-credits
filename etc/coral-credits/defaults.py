@@ -19,8 +19,6 @@ DEBUG = False
 # In a Docker container, ALLOWED_HOSTS is always '*' - let the proxy worry about hosts
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ["http://*","https://*"]
-
 # Make sure Django interprets the script name correctly if set
 if "SCRIPT_NAME" in os.environ:
     FORCE_SCRIPT_NAME = os.environ["SCRIPT_NAME"]
