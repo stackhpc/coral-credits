@@ -1,0 +1,179 @@
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
+from coral_credits.api import db_exceptions, models
+
+
+def get_current_lease(current_lease):
+    current_consumer = get_object_or_404(
+        models.Consumer, consumer_uuid=current_lease.lease_id
+    )
+    current_resource_requests = models.CreditAllocationResource.objects.filter(
+        consumer=current_consumer,
+    )
+    return current_consumer, current_resource_requests
+
+
+def get_resource_provider_account(project_id):
+    resource_provider_account = models.ResourceProviderAccount.objects.get(
+        project_id=project_id
+    )
+    return resource_provider_account
+
+
+def get_credit_allocations(resource_provider_account):
+    # Find all associated active CreditAllocations
+    # Make sure we only look for CreditAllocations valid for the current time
+    now = timezone.now()
+    credit_allocations = models.CreditAllocation.objects.filter(
+        account=resource_provider_account.account, start__lte=now, end__gte=now
+    ).order_by("-start")
+
+    return credit_allocations
+
+
+def get_credit_allocation_resources(credit_allocations, resource_classes):
+    """Returns a dictionary of the form:
+
+    {
+        "resource_class": "credit_resource_allocation"
+    }
+    """
+    resource_allocations = {}
+    for credit_allocation in credit_allocations:
+        for resource_class in resource_classes:
+            credit_allocation_resource = models.CreditAllocationResource.objects.filter(
+                allocation=credit_allocation, resource_class=resource_class
+            ).first()
+            if not credit_allocation_resource:
+                raise db_exceptions.NoCreditAllocation(
+                    f"No credit allocated for resource_type {resource_class}"
+                )
+            resource_allocations[resource_class] = credit_allocation_resource
+    return resource_allocations
+
+
+def get_resource_requests(lease, current_resource_requests=None):
+    """Returns a dictionary of the form:
+
+    {
+        "resource_class": "resource_hours"
+    }
+    """
+    resource_requests = {}
+
+    for reservation in lease.reservations:
+        for (
+            resource_type,
+            amount,
+        ) in reservation.resource_requests.inventories.data.items():
+            resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
+            try:
+                # Keep it simple, ust take min for now
+                # TODO(tylerchristie): check we can allocate max
+                # CreditAllocationResource is a record of the number of resource_hours
+                # available for one unit of a ResourceClass, so we multiply
+                # lease_duration by units required.
+                requested_resource_hours = round(
+                    float(amount["total"]) * reservation.min * lease.duration,
+                    1,
+                )
+                if current_resource_requests:
+                    delta_resource_hours = calculate_delta_resource_hours(
+                        requested_resource_hours,
+                        current_resource_requests,
+                        resource_class,
+                    )
+                else:
+                    delta_resource_hours = requested_resource_hours
+
+                resource_requests[resource_class] = delta_resource_hours
+
+            except KeyError:
+                raise db_exceptions.ResourceRequestFormatError(
+                    f"Unable to recognize {resource_type} format {amount}"
+                )
+
+    return resource_requests
+
+
+def calculate_delta_resource_hours(
+    requested_resource_hours, current_resource_requests, resource_class
+):
+    # Case: user requests the same resource
+    current_resource_request = current_resource_requests.filter(
+        resource_class=resource_class
+    ).first()
+    if current_resource_request:
+        current_resource_hours = current_resource_request.resource_hours
+        return requested_resource_hours - current_resource_hours
+    # Case: user requests a new resource
+    return requested_resource_hours
+
+
+def check_credit_allocations(resource_requests, credit_allocations):
+    """Subtracts resources requested from credit allocations.
+
+    Fails if any result is negative.
+    """
+
+    result = {}
+    for resource_class in credit_allocations:
+        result[resource_class] = (
+            credit_allocations[resource_class].resource_hours
+            - resource_requests[resource_class]
+        )
+
+        if result[resource_class] < 0:
+            raise db_exceptions.InsufficientCredits(
+                f"Insufficient {resource_class.name} credits available. "
+                f"Requested:{resource_requests[resource_class]}, "
+                f"Available:{credit_allocations[resource_class]}"
+            )
+
+    return result
+
+
+def check_credit_balance(credit_allocations, resource_requests):
+    # TODO(tylerchristie) Fresh DB query
+    credit_allocation_resources = get_credit_allocation_resources(
+        credit_allocations, resource_requests.keys()
+    )
+    for allocation in credit_allocation_resources.values():
+
+        if allocation.resource_hours < 0:
+            # We raise an exception so the rollback is handled
+            raise db_exceptions.InsufficientCredits(
+                (
+                    f"Insufficient "
+                    f"{allocation.resource_class.name} "
+                    f"credits after allocation."
+                )
+            )
+
+
+def spend_credits(
+    lease, resource_provider_account, context, resource_requests, credit_allocations
+):
+
+    consumer = models.Consumer.objects.create(
+        consumer_ref=lease.lease_name,
+        consumer_uuid=lease.lease_id,
+        resource_provider_account=resource_provider_account,
+        user_ref=context.user_id,
+        start=lease.start_date,
+        end=lease.end_time,
+    )
+
+    for resource_class in resource_requests:
+        models.ResourceConsumptionRecord.objects.create(
+            consumer=consumer,
+            resource_class=resource_class,
+            resource_hours=resource_requests[resource_class],
+        )
+        # Subtract expenditure from CreditAllocationResource
+        credit_allocations[resource_class].resource_hours = (
+            credit_allocations[resource_class].resource_hours
+            - resource_requests[resource_class]
+        )
+        credit_allocations[resource_class].save()

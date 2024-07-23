@@ -1,5 +1,7 @@
 from django.db import models
 
+# from django.db.models import Q
+
 # TODO(tylerchristie): add allocation window in here, to simplify.
 
 
@@ -30,7 +32,26 @@ class CreditAccount(models.Model):
         return f"{self.name}"
 
 
+class ResourceProviderAccount(models.Model):
+    account = models.ForeignKey(CreditAccount, on_delete=models.CASCADE)
+    provider = models.ForeignKey(ResourceProvider, on_delete=models.CASCADE)
+    project_id = models.UUIDField()
+
+    class Meta:
+        unique_together = (
+            (
+                "account",
+                "provider",
+            ),
+            ("provider", "project_id"),
+        )
+
+    def __str__(self) -> str:
+        return f"{self.project_id} for {self.account} in {self.provider}"
+
+
 class CreditAllocation(models.Model):
+    # TODO(tylerchristie): do we need a name here?
     name = models.CharField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
     account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
@@ -73,20 +94,30 @@ class CreditAllocationResource(models.Model):
 
 class Consumer(models.Model):
     consumer_ref = models.CharField(max_length=200)
-    resource_provider = models.ForeignKey(ResourceProvider, on_delete=models.DO_NOTHING)
+    consumer_uuid = models.UUIDField()
+    resource_provider_account = models.ForeignKey(
+        ResourceProviderAccount, on_delete=models.DO_NOTHING
+    )
+    user_ref = models.UUIDField()
     created = models.DateTimeField(auto_now_add=True)
-    account = models.ForeignKey(CreditAccount, on_delete=models.DO_NOTHING)
     start = models.DateTimeField()
     end = models.DateTimeField()
 
     class Meta:
+        # TODO(tylerchristie): allow either/or nullable?
+        # constraints = [
+        #     models.CheckConstraint(
+        #         check=Q(consumer_ref=False) | Q(consumer_uuid=False),
+        #         name='not_both_null'
+        #     )
+        # ]
         unique_together = (
             "consumer_ref",
-            "resource_provider",
+            "resource_provider_account",
         )
 
     def __str__(self) -> str:
-        return f"{self.consumer_ref}@{self.resource_provider}"
+        return f"{self.consumer_ref}@{self.resource_provider_account}"
 
 
 class ResourceConsumptionRecord(models.Model):

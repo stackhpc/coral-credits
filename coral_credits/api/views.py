@@ -1,9 +1,9 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
-from coral_credits.api import models, serializers
+from coral_credits.api import db_exceptions, db_utils, models, serializers
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):
@@ -19,16 +19,13 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
 
 
 class AccountViewSet(viewsets.ViewSet):
-    def list(self, request):
-        """List all Credit Accounts"""
-        queryset = models.CreditAccount.objects.all()
-        serializer = serializers.CreditAccountSerializer(
-            queryset, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
+    queryset = models.CreditAccount.objects.all()
+    serializer_class = serializers.CreditAccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk=None):
         """Retreives a Credit Account Summary"""
+        # TODO(tylerchristie): refactor
         queryset = models.CreditAccount.objects.all()
         account = get_object_or_404(queryset, pk=pk)
         serializer = serializers.CreditAccountSerializer(
@@ -70,64 +67,196 @@ class AccountViewSet(viewsets.ViewSet):
 
         return Response(account_summary)
 
-    def update(self, request, pk=None):
-        """Add a resource request
 
-        Example request::
-            {
-                "consumer_ref": "vm_test42",
-                "resource_provider_id": 1,
-                "start": "2024-02-07T18:23:38Z",
-                "end": "2024-02-08T18:22:44Z",
-                "resources": [
-                    {
-                        "resource_class": {
-                            "name": "CPU"
-                        },
-                        # TODO(tylerchristie): This should just be total amount of
-                        # resource requested in reservation.
-                        "resource_hours": 2.0
-                    }
-                ]
-            }
-        """
-        resource_request = serializers.ConsumerRequest(data=request.data)
-        resource_request.is_valid(raise_exception=True)
+class ConsumerViewSet(viewsets.ModelViewSet):
+    # TODO(tylerchristie): enable authentication
+    # permission_classes = [permissions.IsAuthenticated]
 
-        rp_queryset = models.ResourceProvider.objects.all()
-        resource_provider = get_object_or_404(
-            rp_queryset, pk=request.data["resource_provider_id"]
+    def create(self, request):
+        return self._create_or_update(request)
+
+    def update(self, request):
+        return self._create_or_update(request, current_lease_required=True)
+
+    def check_create(self, request):
+        return self._create_or_update(request, dry_run=True)
+
+    def check_update(self, request):
+        return self._create_or_update(
+            request, current_lease_required=True, dry_run=True
         )
 
-        account_queryset = models.CreditAccount.objects.all()
-        account = get_object_or_404(account_queryset, pk=pk)
+    @transaction.atomic
+    def _create_or_update(self, request, current_lease_required=False, dry_run=False):
+        """Process a request for a reservation.
 
-        resource_records = []
-        for resource in request.data["resources"]:
-            name = resource["resource_class"]["name"]
-            resource_class = models.ResourceClass.objects.get(name=name)
-            resource_records.append(
-                dict(
-                    resource_class=resource_class,
-                    resource_hours=resource["resource_hours"],
+        Example (blazar) request:
+        {
+            "context": {
+                "user_id": "c631173e-dec0-4bb7-a0c3-f7711153c06c",
+                "project_id": "a0b86a98-b0d3-43cb-948e-00689182efd4",
+                "auth_url": "https://api.example.com:5000/v3",
+                "region_name": "RegionOne"
+            },
+            "lease": {
+                # TODO: "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
+                # TODO: "lease_name": "my_new_lease"
+                "start_date": "2020-05-13T00:00:00.012345+02:00",
+                "end_time": "2020-05-14T23:59:00.012345+02:00",
+                "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 2,
+                    "max": 3,
+                    "hypervisor_properties": "[]",
+                    "resource_properties": "[\"==\", \"$availability_zone\", \"az1\"]",
+                    "allocations": [
+                    {
+                        "id": "1",
+                        "hypervisor_hostname": "32af5a7a-e7a3-4883-a643-828e3f63bf54",
+                        "extra": {
+                        "availability_zone": "az1"
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "hypervisor_hostname": "af69aabd-8386-4053-a6dd-1a983787bd7f",
+                        "extra": {
+                        "availability_zone": "az1"
+                        }
+                    }
+                    ]
+                    # TODO(assumptionsandg): "resource_requests" :
+                    {
+                        # Resource request can be arbitrary, e.g.:
+                        "inventories": {
+                            "DISK_GB": {
+                                "allocation_ratio": 1.0,
+                                "max_unit": 35,
+                                "min_unit": 1,
+                                "reserved": 0,
+                                "step_size": 1,
+                                "total": 35
+                            },
+                            "MEMORY_MB": {
+                                "allocation_ratio": 1.5,
+                                "max_unit": 5825,
+                                "min_unit": 1,
+                                "reserved": 512,
+                                "step_size": 1,
+                                "total": 5825
+                            },
+                            "VCPU": {
+                                "allocation_ratio": 16.0,
+                                "max_unit": 4,
+                                "min_unit": 1,
+                                "reserved": 0,
+                                "step_size": 1,
+                                "total": 4
+                            }
+                        },
+                        "resource_provider_generation": 7
+                    }
+                }
+                ]
+            },
+            "current_lease" :
+                {
+                    # Same as above, only exists if this is an update request
+                }
+        }
+        """
+        context, lease, current_lease = self._validate_request(
+            request, current_lease_required
+        )
+
+        if current_lease_required:
+            try:
+                current_consumer, current_resource_requests = (
+                    db_utils.get_current_lease(current_lease)
                 )
+            except models.Consumer.DoesNotExist:
+                return self._http_403_forbidden(
+                    "No matching record found for current lease"
+                )
+
+        try:
+            resource_provider_account = db_utils.get_resource_provider_account(
+                context.project_id
+            )
+        except models.ResourceProviderAccount.DoesNotExist:
+            return self._http_403_forbidden("No matching ResourceProviderAccount found")
+
+        credit_allocations = db_utils.get_credit_allocations(resource_provider_account)
+
+        if not credit_allocations.exists():
+            return self._http_403_forbidden("No active CreditAllocation found")
+
+        # Check resource credit availability (first check)
+        try:
+            if current_lease_required:
+                resource_requests = db_utils.get_resource_requests(
+                    lease, current_resource_requests
+                )
+            else:
+                resource_requests = db_utils.get_resource_requests(lease)
+            allocation_hours = db_utils.get_credit_allocation_resources(
+                credit_allocations, resource_requests.keys()
+            )
+            db_utils.check_credit_allocations(resource_requests, allocation_hours)
+        except db_exceptions.ResourceRequestFormatError as e:
+            # Incorrect resource request format
+            return self._http_403_forbidden(repr(e))
+        except db_exceptions.InsufficientCredits as e:
+            # Insufficient credits
+            return self._http_403_forbidden(repr(e))
+        except db_exceptions.NoCreditAllocation as e:
+            # No credit for resource class
+            return self._http_403_forbidden(repr(e))
+
+        # Don't modify the database on a dry_run
+        if not dry_run:
+            # Account has sufficient credits at time of database query,
+            # so we allocate resources.
+            # Update scenario:
+            if current_lease_required:
+                # We have CASCADE behaviour for ResourceConsumptionRecords
+                # Also we roll back all db transactions if the final check fails
+                current_consumer.delete()
+            db_utils.spend_credits(
+                lease,
+                resource_provider_account,
+                context,
+                resource_requests,
+                allocation_hours,
             )
 
-        # TODO(johngarbutt): add validation we have enough credits
+            # Final check
+            db_utils.check_credit_balance(credit_allocations, resource_requests)
 
-        with transaction.atomic():
-            consumer = models.Consumer.objects.create(
-                consumer_ref=request.data["consumer_ref"],
-                account=account,
-                resource_provider=resource_provider,
-                start=request.data["start"],
-                end=request.data["end"],
+            return Response(
+                {"message": "Consumer and resources requested successfully"},
+                status=status.HTTP_204_NO_CONTENT,
             )
-            for resource_rec in resource_records:
-                models.ResourceConsumptionRecord.objects.create(
-                    consumer=consumer,
-                    resource_class=resource_rec["resource_class"],
-                    resource_hours=resource_rec["resource_hours"],
-                )
+        return Response(
+            {"message": "Account has sufficient resources to fufill request"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
-        return self.retrieve(request, pk)
+    def _validate_request(self, request, current_lease_required):
+        resource_request = serializers.ConsumerRequestSerializer(
+            data=request.data, current_lease_required=current_lease_required
+        )
+        resource_request.is_valid(raise_exception=True)
+        consumer_request = resource_request.create(resource_request.validated_data)
+        return (
+            consumer_request.context,
+            consumer_request.lease,
+            consumer_request.current_lease,
+        )
+
+    def _http_403_forbidden(self, msg):
+        return Response(
+            {"error": msg},
+            status=status.HTTP_403_FORBIDDEN,
+        )
