@@ -14,3 +14,9 @@ class NoCreditAllocation(Exception):
     """Raised when an account has no credit allocated for a given resource"""
 
     pass
+
+
+class NoResourceClass(Exception):
+    """Raised when there is no resource class matching the query"""
+
+    pass

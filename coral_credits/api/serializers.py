@@ -30,22 +30,26 @@ class CreditAccountSerializer(serializers.ModelSerializer):
         fields = ["url", "name", "email", "created"]
 
 
-class ResourceClass(serializers.ModelSerializer):
-    class Meta:
-        model = models.ResourceClass
-        fields = ["name"]
-
-
-class CreditAllocationResource(serializers.ModelSerializer):
-    resource_class = ResourceClass()
+class CreditAllocationResourceSerializer(serializers.ModelSerializer):
+    resource_class = ResourceClassSerializer()
+    resource_hours = serializers.FloatField()
 
     class Meta:
         model = models.CreditAllocationResource
         fields = ["resource_class", "resource_hours"]
 
+    def to_representation(self, instance):
+        """Pass the context to the ResourceClassSerializer"""
+        representation = super().to_representation(instance)
+        resource_class_serializer = ResourceClassSerializer(
+            instance.resource_class, context=self.context
+        )
+        representation["resource_class"] = resource_class_serializer.data
+        return representation
+
 
 class CreditAllocation(serializers.ModelSerializer):
-    resources = CreditAllocationResource(many=True)
+    resources = CreditAllocationResourceSerializer(many=True)
 
     class Meta:
         model = models.CreditAllocation
@@ -53,7 +57,7 @@ class CreditAllocation(serializers.ModelSerializer):
 
 
 class ResourceConsumptionRecord(serializers.ModelSerializer):
-    resource_class = ResourceClass()
+    resource_class = ResourceClassSerializer()
 
     class Meta:
         model = models.ResourceConsumptionRecord

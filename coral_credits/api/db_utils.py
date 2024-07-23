@@ -21,7 +21,18 @@ def get_resource_provider_account(project_id):
     return resource_provider_account
 
 
-def get_credit_allocations(resource_provider_account):
+def get_credit_allocation(id):
+    now = timezone.now()
+    try:
+        credit_allocation = models.CreditAllocation.objects.filter(
+            id=id, start__lte=now, end__gte=now
+        ).first()
+    except models.CreditAllocation.DoesNotExist:
+        raise db_exceptions.NoCreditAllocation("Invalid allocation_id")
+    return credit_allocation
+
+
+def get_all_credit_allocations(resource_provider_account):
     # Find all associated active CreditAllocations
     # Make sure we only look for CreditAllocations valid for the current time
     now = timezone.now()
@@ -51,6 +62,39 @@ def get_credit_allocation_resources(credit_allocations, resource_classes):
                 )
             resource_allocations[resource_class] = credit_allocation_resource
     return resource_allocations
+
+
+def get_resource_class(resource_class_name):
+    try:
+        resource_class = models.ResourceClass.objects.get(name=resource_class_name)
+    except models.ResourceClass.DoesNotExist:
+        raise db_exceptions.NoResourceClass(
+            f"Resource class '{resource_class_name}' does not exist."
+        )
+    return resource_class
+
+
+def get_valid_allocations(inventories):
+    """Validates a dictionary of resource allocations.
+
+    Returns a list of dictionaries of the form:
+
+    [
+        {"VCPU": "resource_hours"},
+        {"MEMORY_MB": "resource_hours"},
+        ...
+    ]
+    """
+    try:
+        allocations = {}
+        for resource_class_name, resource_hours in inventories.data.items():
+            resource_class = get_resource_class(resource_class_name)
+            allocations[resource_class] = float(resource_hours)
+    except ValueError:
+        raise db_exceptions.ResourceRequestFormatError(
+            f"Invalid value for resource hours: '{resource_hours}'"
+        )
+    return allocations
 
 
 def get_resource_requests(lease, current_resource_requests=None):
@@ -177,3 +221,30 @@ def spend_credits(
             - resource_requests[resource_class]
         )
         credit_allocations[resource_class].save()
+
+
+def create_credit_resource_allocations(credit_allocation, resource_allocations):
+    """Allocates resource credits to a given credit allocation.
+
+    Returns a list of new/updated CreditAllocationResources:
+    [
+        CreditAllocationResource
+    ]
+    """
+    cars = []
+    for resource_class, resource_hours in resource_allocations.items():
+        # TODO(tyler) logging create or update?
+        car, created = models.CreditAllocationResource.objects.get_or_create(
+            allocation=credit_allocation,
+            resource_class=resource_class,
+            defaults={"resource_hours": resource_hours},
+        )
+        # If exists, update:
+        if not created:
+            car.resource_hours += resource_hours
+            car.save()
+
+        # Refresh from db to get the updated resource_hours
+        car.refresh_from_db()
+        cars.append(car)
+    return cars
