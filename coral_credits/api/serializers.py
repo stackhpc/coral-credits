@@ -15,25 +15,25 @@ from coral_credits.api.business_objects import (
 class ResourceClassSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceClass
-        fields = ["url", "name", "created"]
+        fields = ["id", "url", "name", "created"]
 
 
 class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProvider
-        fields = ["url", "name", "created", "email", "info_url"]
+        fields = ["id", "url", "name", "created", "email", "info_url"]
 
 
 class ResourceProviderAccountSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProviderAccount
-        fields = ["url", "account", "provider", "project_id"]
+        fields = ["id", "url", "account", "provider", "project_id"]
 
 
 class CreditAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CreditAccount
-        fields = ["url", "name", "email", "created"]
+        fields = ["id", "url", "name", "email", "created"]
 
 
 class CreditAllocationResourceSerializer(serializers.ModelSerializer):
