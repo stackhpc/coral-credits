@@ -2,6 +2,9 @@ from django.contrib import admin
 
 from coral_credits.api import models
 
+# Admin views are decorated with @csrf_protect so
+# CSRF protection is enabled even without a middleware.
+
 # Register your models here.
 admin.site.register(models.CreditAccount)
 admin.site.register(models.CreditAllocation)
