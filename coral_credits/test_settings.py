@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "/data/db.sqlite3",
+        "NAME": "db.sqlite3",
     }
 }
 
@@ -78,6 +78,8 @@ DEBUG = False
 
 # In a Docker container, ALLOWED_HOSTS is always '*' - let the proxy worry about hosts
 ALLOWED_HOSTS = ["*"]
+
+CSRF_TRUSTED_ORIGINS = ["http://*","https://*"]
 
 # Make sure Django interprets the script name correctly if set
 if "SCRIPT_NAME" in os.environ:
