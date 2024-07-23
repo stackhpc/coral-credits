@@ -91,8 +91,8 @@ RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
         "email": "provider@test.com",
         "info_url": "https://testprovider.com"
     }' \
-    http://$SITE:$PORT/resource_provider/ | jq -r '.id')
-echo "Resource Provider ID: $RESOURCE_PROVIDER_ID"
+    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
+echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
@@ -108,10 +108,10 @@ ACCOUNT_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    http://$SITE:$PORT/account/ | jq -r '.id')
-echo "Account ID: $ACCOUNT_ID"
+    http://$SITE:$PORT/account/ | jq -r '.url')
+echo "Account URL: $ACCOUNT_ID"
 
-PROJECT_ID="test-project-id"
+PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
 # 4. Add a resource provider account 
 echo "Adding a resource provider account:"
 RPA_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
@@ -124,7 +124,7 @@ RPA_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
 echo "Resource Provider Account ID: $RPA_ID"
 
 START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-END_DATE=$(date -u -v +1d +"%Y-%m-%dT%H:%M:%SZ")
+END_DATE=$(date -u -d "+1 day" +"%Y-%m-%dT%H:%M:%SZ")
 # 5. Add some credit allocation
 echo "Adding credit allocation:"
 ALLOCATION_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
@@ -153,7 +153,7 @@ curl -s -X POST -H "$CONTENT_TYPE" -d \
 echo "Creating a consumer:"
 RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$CONTENT_TYPE" -d "{
         \"context\": {
-            \"user_id\": \"some_user_id\",
+            \"user_id\": \"caa8b54a-eb5e-4134-8ae2-a3946a428ec7\",
             \"project_id\": \"$PROJECT_ID\",
             \"auth_url\": \"https://api.example.com:5000/v3\",
             \"region_name\": \"RegionOne\"
