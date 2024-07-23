@@ -23,6 +23,7 @@ class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
         model = models.ResourceProvider
         fields = ["url", "name", "created", "email", "info_url"]
 
+
 class ResourceProviderAccountSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.ResourceProviderAccount
