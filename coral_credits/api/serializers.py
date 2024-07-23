@@ -54,7 +54,7 @@ class CreditAllocationResourceSerializer(serializers.ModelSerializer):
         return representation
 
 
-class CreditAllocation(serializers.ModelSerializer):
+class CreditAllocationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.CreditAllocation
         fields = ["name", "created", "account", "start", "end"]

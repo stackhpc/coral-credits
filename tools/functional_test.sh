@@ -142,9 +142,9 @@ echo "Adding allocation to resources:"
 curl -s -X POST -H "$CONTENT_TYPE" -d \
     "{
         \"inventories\": {
-            \"$VCPU_ID\": 100,
-            \"$MEMORY_ID\": 24000,
-            \"$DISK_GB\": 5000
+            \"VCPU\": 100,
+            \"MEMORY_MB\": 24000,
+            \"DISK_GB\": 5000
         }
     }" \
     http://$SITE:$PORT/allocations/$ALLOCATION_ID/resources/
