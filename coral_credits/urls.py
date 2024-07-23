@@ -25,6 +25,7 @@ from coral_credits.api import views
 router = routers.DefaultRouter()
 router.register(r"resource_class", views.ResourceClassViewSet)
 router.register(r"resource_provider", views.ResourceProviderViewSet)
+router.register(r"resource_provider_account",views.ResourceProviderAccountViewSet)
 router.register(r"allocation", views.CreditAllocationViewSet)
 router.register(r"account", views.AccountViewSet, basename="creditaccount")
 router.register(r"consumer", views.ConsumerViewSet, basename="resource-request")

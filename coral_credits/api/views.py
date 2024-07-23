@@ -80,7 +80,7 @@ class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
 
 
-class AccountViewSet(viewsets.ViewSet):
+class AccountViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAccount.objects.all()
     serializer_class = serializers.CreditAccountSerializer
     # permission_classes = [permissions.IsAuthenticated]

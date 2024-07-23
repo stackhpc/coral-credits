@@ -101,17 +101,17 @@ MEMORY_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http:/
 DISK_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
-# 3. Add an account (admin endpoint)
+# 3. Add an account
 echo "Adding an account:"
 ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    http://$SITE:$PORT/admin/api/creditaccount/add/ | jq -r '.id')
+    http://$SITE:$PORT/account/ | jq -r '.id')
 echo "Account ID: $ACCOUNT_ID"
 
-# 4. Add a resource provider account (admin endpoint)
+# 4. Add a resource provider account 
 echo "Adding a resource provider account:"
 RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
@@ -119,10 +119,10 @@ RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "provider": $RESOURCE_PROVIDER_ID, 
         "project_id": "test-project-id"
     }' \
-    http://$SITE:$PORT/admin/api/resourceprovideraccount/add/ | jq -r '.id')
+    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
-# 5. Add some credit allocation (admin endpoint)
+# 5. Add some credit allocation
 echo "Adding credit allocation:"
 ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
@@ -131,7 +131,7 @@ ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "start": "2023-01-01T00:00:00Z", 
         "end": "2023-12-31T23:59:59Z"
     }' \
-    http://$SITE:$PORT/admin/api/creditallocation/add/ | jq -r '.id')
+    http://$SITE:$PORT/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
