@@ -97,7 +97,9 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         # TODO(johngarbutt) look for any during the above allocations
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
-        allocations = serializers.CreditAllocationSerializer(all_allocations_query, many=True)
+        allocations = serializers.CreditAllocationSerializer(
+            all_allocations_query, many=True
+        )
 
         # TODO(johngarbutt) look for any during the above allocations
         consumers_query = models.Consumer.objects.filter(account__pk=pk)
