@@ -60,39 +60,6 @@ def api_client():
 
 
 @pytest.fixture
-def request_data(request):
-    return {
-        "context": {
-            "user_id": request.config.USER_REF,
-            "project_id": request.config.PROJECT_ID,
-            "auth_url": "https://api.example.com:5000/v3",
-            "region_name": "RegionOne",
-        },
-        "lease": {
-            "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
-            "lease_name": "my_new_lease",
-            "start_date": request.config.START_DATE.isoformat(),
-            "end_time": request.config.END_DATE.isoformat(),
-            "reservations": [
-                {
-                    "resource_type": "physical:host",
-                    "min": 1,
-                    "max": 3,
-                    "resource_requests": {
-                        "inventories": {
-                            "DISK_GB": {"total": 35},
-                            "MEMORY_MB": {"total": 1000},
-                            "VCPU": {"total": 4},
-                        },
-                        "resource_provider_generation": 7,
-                    },
-                }
-            ],
-        },
-    }
-
-
-@pytest.fixture
 def create_credit_allocation_resources():
     # Factory fixture
     def _create_credit_allocation_resources(

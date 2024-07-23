@@ -8,6 +8,39 @@ from rest_framework import status
 import coral_credits.api.models as models
 
 
+@pytest.fixture
+def request_data(request):
+    return {
+        "context": {
+            "user_id": request.config.USER_REF,
+            "project_id": request.config.PROJECT_ID,
+            "auth_url": "https://api.example.com:5000/v3",
+            "region_name": "RegionOne",
+        },
+        "lease": {
+            "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            "lease_name": "my_new_lease",
+            "start_date": request.config.START_DATE.isoformat(),
+            "end_time": request.config.END_DATE.isoformat(),
+            "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 1,
+                    "max": 3,
+                    "resource_requests": {
+                        "inventories": {
+                            "DISK_GB": {"total": 35},
+                            "MEMORY_MB": {"total": 1000},
+                            "VCPU": {"total": 4},
+                        },
+                        "resource_provider_generation": 7,
+                    },
+                }
+            ],
+        },
+    }
+
+
 @pytest.mark.parametrize(
     "allocation_hours",
     [
@@ -33,7 +66,7 @@ def test_valid_create_request(
         credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resourcerequest-list")
+    url = reverse("resource-request-list")
     response = api_client.post(
         url,
         data=json.dumps(request_data),
@@ -97,11 +130,11 @@ def test_create_request_insufficient_credits(
     allocation_hours,
 ):
 
-    credit_allocation_resources = create_credit_allocation_resources(
+    create_credit_allocation_resources(
         credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resourcerequest-list")
+    url = reverse("resource-request-list")
     response = api_client.post(
         url,
         data=json.dumps(request_data),
