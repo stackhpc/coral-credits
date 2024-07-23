@@ -23,6 +23,11 @@ class ResourceProviderSerializer(serializers.HyperlinkedModelSerializer):
         model = models.ResourceProvider
         fields = ["url", "name", "created", "email", "info_url"]
 
+class ResourceProviderAccountSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = models.ResourceProviderAccount
+        fields = ["url", "account", "provider", "project_id"]
+
 
 class CreditAccountSerializer(serializers.ModelSerializer):
     class Meta:
