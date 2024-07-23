@@ -111,51 +111,82 @@ ACCOUNT_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     http://$SITE:$PORT/account/ | jq -r '.id')
 echo "Account ID: $ACCOUNT_ID"
 
+PROJECT_ID="test-project-id"
 # 4. Add a resource provider account 
 echo "Adding a resource provider account:"
 RPA_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
-    '{
-        "account": $ACCOUNT_ID, 
-        "provider": $RESOURCE_PROVIDER_ID, 
-        "project_id": "test-project-id"
-    }' \
+    "{
+        \"account\": \"$ACCOUNT_ID\", 
+        \"provider\": \"$RESOURCE_PROVIDER_ID\", 
+        \"project_id\": \"$PROJECT_ID\"
+    }" \
     http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
+START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+END_DATE=$(date -u -v +1d +"%Y-%m-%dT%H:%M:%SZ")
 # 5. Add some credit allocation
 echo "Adding credit allocation:"
 ALLOCATION_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
-    '{
-        "name": "Test Allocation", 
-        "account": $ACCOUNT_ID,
-        "start": "2023-01-01T00:00:00Z", 
-        "end": "2023-12-31T23:59:59Z"
-    }' \
+    "{
+        \"name\": \"Test Allocation\", 
+        \"account\": \"$ACCOUNT_ID\",
+        \"start\": \"$START_DATE\", 
+        \"end\": \"$END_DATE\"
+    }" \
     http://$SITE:$PORT/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
 echo "Adding allocation to resources:"
 curl -s -X POST -H "$CONTENT_TYPE" -d \
-    '{
-        "inventories": {
-            "$VCPU_ID": 1000,
-            "$MEMORY_ID": 10000,
-            "$DISK_GB": 5000
+    "{
+        \"inventories\": {
+            \"$VCPU_ID\": 100,
+            \"$MEMORY_ID\": 24000,
+            \"$DISK_GB\": 5000
         }
-    }' \
+    }" \
     http://$SITE:$PORT/allocations/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
-CONSUMER_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d "{
-    \"consumer_ref\": \"test-consumer\",
-    \"consumer_uuid\": \"550e8400-e29b-41d4-a716-446655440000\",
-    \"resource_provider_account\": $RPA_ID,
-    \"user_ref\": \"test-user\",
-    \"start\": \"2023-01-01T00:00:00Z\",
-    \"end\": \"2023-12-31T23:59:59Z\"
-}" http://$SITE:$PORT/consumer/ | jq -r '.id')
-echo "Consumer ID: $CONSUMER_ID"
+RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$CONTENT_TYPE" -d "{
+        \"context\": {
+            \"user_id\": \"some_user_id\",
+            \"project_id\": \"$PROJECT_ID\",
+            \"auth_url\": \"https://api.example.com:5000/v3\",
+            \"region_name\": \"RegionOne\"
+        },
+        \"lease\": {
+            \"lease_id\": \"e96b5a17-ada0-4034-a5ea-34db024b8e04\",
+            \"lease_name\": \"my_new_lease\",
+            \"start_date\": \"$START_DATE\",
+            \"end_time\": \"$END_DATE\",
+            \"reservations\": [
+                {
+                    \"resource_type\": \"physical:host\",
+                    \"min\": 1,
+                    \"max\": 3,
+                    \"resource_requests\": {
+                        \"inventories\": {
+                            \"DISK_GB\": {\"total\": 35},
+                            \"MEMORY_MB\": {\"total\": 1000},
+                            \"VCPU\": {\"total\": 4}
+                        },
+                        \"resource_provider_generation\": 7
+                    }
+                }
+            ]
+        }
+    }" \
+    http://$SITE:$PORT/consumer/)
+
+if [ "$status" -eq 204 ]; then
+		return 0
+	else
+		echo "Error: Expected HTTP status code 204, but got $status"
+		return 1
+	fi
 
 echo "All tests completed."
