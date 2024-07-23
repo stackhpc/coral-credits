@@ -103,7 +103,7 @@ echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
 echo "Adding an account:"
-ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+ACCOUNT_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Account", 
         "email": "test@account.com"
@@ -113,7 +113,7 @@ echo "Account ID: $ACCOUNT_ID"
 
 # 4. Add a resource provider account 
 echo "Adding a resource provider account:"
-RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+RPA_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     '{
         "account": $ACCOUNT_ID, 
         "provider": $RESOURCE_PROVIDER_ID, 
@@ -124,7 +124,7 @@ echo "Resource Provider Account ID: $RPA_ID"
 
 # 5. Add some credit allocation
 echo "Adding credit allocation:"
-ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
+ALLOCATION_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Allocation", 
         "account": $ACCOUNT_ID,
