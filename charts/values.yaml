@@ -67,9 +67,6 @@ securityContext:
     drop: [ALL]
   readOnlyRootFilesystem: true
 
-# Django secret name
-djangoSecretName: {{ include "coral-credits.fullname" . }}-django-env
-
 # Django settings
 settings:
   # The Django secret key

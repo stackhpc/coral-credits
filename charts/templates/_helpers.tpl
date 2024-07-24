@@ -51,3 +51,10 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 {{ include "coral-credits.selectorLabels" . }}
 {{- end }}
+
+{{/*
+Secrets
+*/}}
+{{- define "coral-credits.djangoSecretName" -}}
+{{- default (printf "%s-django-env" (include "coral-credits.fullname" .)) -}}
+{{- end -}}
