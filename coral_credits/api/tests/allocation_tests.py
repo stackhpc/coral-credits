@@ -26,7 +26,7 @@ def test_credit_allocation_resource_create_success(
     )
 
     # Make the API call
-    response = api_client.post(url, request_data, format="json")
+    response = api_client.post(url, request_data, format="json", secure=True)
 
     # Check that the request was successful
     assert response.status_code == status.HTTP_200_OK, (

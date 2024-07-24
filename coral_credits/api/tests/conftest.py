@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 
 from django.utils.timezone import make_aware
 import pytest
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 import coral_credits.api.models as models
@@ -12,6 +14,13 @@ def pytest_configure(config):
     config.USER_REF = "caa8b54a-eb5e-4134-8ae2-a3946a428ec7"
     config.START_DATE = make_aware(datetime.now())
     config.END_DATE = config.START_DATE + timedelta(days=1)
+
+
+# Get auth token
+@pytest.fixture
+def token():
+    user = User.objects.create_user(username="testuser", password="12345")
+    return Token.objects.create(user=user)
 
 
 # Fixtures defining all the necessary database entries for testing
@@ -55,8 +64,10 @@ def credit_allocation(account, request):
 
 
 @pytest.fixture
-def api_client():
-    return APIClient()
+def api_client(token):
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="X-Auth-Token " + token.key)
+    return client
 
 
 @pytest.fixture
