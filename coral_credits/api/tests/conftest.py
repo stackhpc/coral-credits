@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
+from django.contrib.auth.models import User
 from django.utils.timezone import make_aware
 import pytest
-from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
