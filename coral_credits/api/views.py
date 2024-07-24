@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -286,13 +287,18 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 # We have CASCADE behaviour for ResourceConsumptionRecords
                 # Also we roll back all db transactions if the final check fails
                 current_consumer.delete()
-            db_utils.spend_credits(
-                lease,
-                resource_provider_account,
-                context,
-                resource_requests,
-                allocation_hours,
-            )
+            try:
+                db_utils.spend_credits(
+                    lease,
+                    resource_provider_account,
+                    context,
+                    resource_requests,
+                    allocation_hours,
+                )
+            except IntegrityError as e:
+                # Lease ID is not unique
+                # TODO(tylerchristie) does blazar give the same UUID for a lease update?
+                return _http_403_forbidden(repr(e))
 
             # Final check
             db_utils.check_credit_balance(credit_allocations, resource_requests)

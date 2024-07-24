@@ -112,7 +112,7 @@ class Consumer(models.Model):
         #     )
         # ]
         unique_together = (
-            "consumer_ref",
+            "consumer_uuid",
             "resource_provider_account",
         )
 
