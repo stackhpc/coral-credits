@@ -18,10 +18,29 @@ spec:
       initContainers:
         - name: migrate-db
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
-          command:
-          - python
-          - /coral-credits/manage.py
-          - migrate
+          env:
+          {{ with .Values.djangoSecretName }}
+          - name: DJANGO_SUPERUSER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: username
+          - name: DJANGO_SUPERUSER_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: email
+          - name: DJANGO_SUPERUSER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: password
+          {{ end }}
+          command: ["/bin/sh"]
+          - -c
+          - >- 
+              python /coral-credits/manage.py migrate &&
+              python /coral-credits/manage.py createsuperuser --no-input
           volumeMounts:
             - name: data
               mountPath: /data
