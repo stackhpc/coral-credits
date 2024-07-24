@@ -7,6 +7,6 @@ type: Opaque
 # Use data because of https://github.com/helm/helm/issues/10010
 # Not doing so means that AWX-related keys are not removed on transition to the CRD
 data:
-  password: {{ .Values.settings.superuserPassword | default (randAlphaNum 64) }}
-  username: {{ .Values.settings.superuserUsername | default "admin" }}
-  email: {{ .Values.settings.superuserEmail | default "admin@mail.com" }}
+  password: {{ .Values.settings.superuserPassword | default (randAlphaNum 64) | b64enc }}
+  username: {{ .Values.settings.superuserUsername | default "admin" | b64enc }}
+  email: {{ .Values.settings.superuserEmail | default "admin@mail.com" | b64enc }}
