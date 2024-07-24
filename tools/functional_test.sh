@@ -147,7 +147,7 @@ curl -s -X POST -H "$CONTENT_TYPE" -d \
             \"DISK_GB\": 5000
         }
     }" \
-    http://$SITE:$PORT/allocations/$ALLOCATION_ID/resources/
+    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
