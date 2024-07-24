@@ -182,7 +182,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$CONTENT_TYPE" -d "{
     }" \
     http://$SITE:$PORT/consumer/)
 
-if [ "$status" -eq 204 ]; then
+if [ "$RESPONSE" -eq 204 ]; then
 		return 0
 	else
 		echo "Error: Expected HTTP status code 204, but got $status"
