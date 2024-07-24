@@ -53,5 +53,5 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("admin/", admin.site.urls),
     # TODO(tylerchristie): probably need some permissions/scoping
-    path('api-token-auth/', drfviews.obtain_auth_token)
+    path("api-token-auth/", drfviews.obtain_auth_token),
 ]
