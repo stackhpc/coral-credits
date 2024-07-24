@@ -57,7 +57,7 @@ class CreditAllocationResourceSerializer(serializers.ModelSerializer):
 class CreditAllocationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.CreditAllocation
-        fields = ["name", "created", "account", "start", "end"]
+        fields = ["id", "name", "created", "account", "start", "end"]
 
 
 class ResourceConsumptionRecord(serializers.ModelSerializer):
