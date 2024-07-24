@@ -1,27 +1,90 @@
 from django.db import transaction
+from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 from coral_credits.api import db_exceptions, db_utils, models, serializers
 
 
+class CreditAllocationViewSet(viewsets.ModelViewSet):
+    queryset = models.CreditAllocation.objects.all()
+    serializer_class = serializers.CreditAllocationSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+
+class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
+    queryset = models.CreditAllocationResource.objects.all()
+    serializer_class = serializers.CreditAllocationResourceSerializer
+    # TODO(tylerchristie): enable authentication
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, allocation_pk=None):
+        """Allocate credits to a dictionary of resource classes.
+
+        Example Request:
+        {
+            "inventories": {"VCPU": 50, "MEMORY_MB": 2000, "DISK_GB": 1000},
+        }
+        """
+
+        resources = self._validate_request(request)
+
+        try:
+            allocation = db_utils.get_credit_allocation(allocation_pk)
+            allocations = db_utils.get_valid_allocations(resources)
+        except db_exceptions.NoCreditAllocation as e:
+            # No Credit Allocation
+            return _http_403_forbidden(repr(e))
+        except db_exceptions.NoResourceClass as e:
+            # Resource requested doesn't exist.
+            return _http_403_forbidden(repr(e))
+        except db_exceptions.ResourceRequestFormatError as e:
+            # Invalid resource_hours format.
+            return _http_403_forbidden(repr(e))
+
+        # TODO(tylerchristie) any exceptions this could throw?
+        updated_allocations = db_utils.create_credit_resource_allocations(
+            allocation, allocations
+        )
+        serializer = serializers.CreditAllocationResourceSerializer(
+            updated_allocations, many=True, context={"request": request}
+        )
+        return _http_200_ok(serializer.data)
+
+    def _validate_request(self, request):
+
+        resource_allocations = serializers.ResourceRequestSerializer(data=request.data)
+
+        resource_allocations.is_valid(raise_exception=True)
+        allocation_request = resource_allocations.create(
+            resource_allocations.validated_data
+        )
+        return allocation_request.inventories
+
+
 class ResourceClassViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceClass.objects.all()
     serializer_class = serializers.ResourceClassSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
 
 class ResourceProviderViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProvider.objects.all()
     serializer_class = serializers.ResourceProviderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
 
-class AccountViewSet(viewsets.ViewSet):
+class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
+    queryset = models.ResourceProviderAccount.objects.all()
+    serializer_class = serializers.ResourceProviderAccountSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+
+class AccountViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAccount.objects.all()
     serializer_class = serializers.CreditAccountSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk=None):
         """Retreives a Credit Account Summary"""
@@ -35,7 +98,9 @@ class AccountViewSet(viewsets.ViewSet):
 
         # TODO(johngarbutt) look for any during the above allocations
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
-        allocations = serializers.CreditAllocation(all_allocations_query, many=True)
+        allocations = serializers.CreditAllocationSerializer(
+            all_allocations_query, many=True
+        )
 
         # TODO(johngarbutt) look for any during the above allocations
         consumers_query = models.Consumer.objects.filter(account__pk=pk)
@@ -69,7 +134,6 @@ class AccountViewSet(viewsets.ViewSet):
 
 
 class ConsumerViewSet(viewsets.ModelViewSet):
-    # TODO(tylerchristie): enable authentication
     # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request):
@@ -176,21 +240,21 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                     db_utils.get_current_lease(current_lease)
                 )
             except models.Consumer.DoesNotExist:
-                return self._http_403_forbidden(
-                    "No matching record found for current lease"
-                )
+                return _http_403_forbidden("No matching record found for current lease")
 
         try:
             resource_provider_account = db_utils.get_resource_provider_account(
                 context.project_id
             )
         except models.ResourceProviderAccount.DoesNotExist:
-            return self._http_403_forbidden("No matching ResourceProviderAccount found")
+            return _http_403_forbidden("No matching ResourceProviderAccount found")
 
-        credit_allocations = db_utils.get_credit_allocations(resource_provider_account)
+        credit_allocations = db_utils.get_all_credit_allocations(
+            resource_provider_account
+        )
 
         if not credit_allocations.exists():
-            return self._http_403_forbidden("No active CreditAllocation found")
+            return _http_403_forbidden("No active CreditAllocation found")
 
         # Check resource credit availability (first check)
         try:
@@ -206,13 +270,13 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             db_utils.check_credit_allocations(resource_requests, allocation_hours)
         except db_exceptions.ResourceRequestFormatError as e:
             # Incorrect resource request format
-            return self._http_403_forbidden(repr(e))
+            return _http_403_forbidden(repr(e))
         except db_exceptions.InsufficientCredits as e:
             # Insufficient credits
-            return self._http_403_forbidden(repr(e))
+            return _http_403_forbidden(repr(e))
         except db_exceptions.NoCreditAllocation as e:
             # No credit for resource class
-            return self._http_403_forbidden(repr(e))
+            return _http_403_forbidden(repr(e))
 
         # Don't modify the database on a dry_run
         if not dry_run:
@@ -223,24 +287,25 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 # We have CASCADE behaviour for ResourceConsumptionRecords
                 # Also we roll back all db transactions if the final check fails
                 current_consumer.delete()
-            db_utils.spend_credits(
-                lease,
-                resource_provider_account,
-                context,
-                resource_requests,
-                allocation_hours,
-            )
+            try:
+                db_utils.spend_credits(
+                    lease,
+                    resource_provider_account,
+                    context,
+                    resource_requests,
+                    allocation_hours,
+                )
+            except IntegrityError as e:
+                # Lease ID is not unique
+                # TODO(tylerchristie) does blazar give the same UUID for a lease update?
+                return _http_403_forbidden(repr(e))
 
             # Final check
             db_utils.check_credit_balance(credit_allocations, resource_requests)
+            return _http_204_no_content("Consumer and resources requested successfully")
 
-            return Response(
-                {"message": "Consumer and resources requested successfully"},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        return Response(
-            {"message": "Account has sufficient resources to fufill request"},
-            status=status.HTTP_204_NO_CONTENT,
+        return _http_204_no_content(
+            "Account has sufficient resources to fufill request"
         )
 
     def _validate_request(self, request, current_lease_required):
@@ -255,8 +320,23 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             consumer_request.current_lease,
         )
 
-    def _http_403_forbidden(self, msg):
-        return Response(
-            {"error": msg},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+
+def _http_403_forbidden(msg):
+    return Response(
+        {"error": msg},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _http_204_no_content(msg):
+    return Response(
+        {"message": msg},
+        status=status.HTTP_204_NO_CONTENT,
+    )
+
+
+def _http_200_ok(msg):
+    return Response(
+        {"data": msg},
+        status=status.HTTP_200_OK,
+    )

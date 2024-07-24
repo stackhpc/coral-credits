@@ -18,15 +18,24 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
-from rest_framework import routers
+from rest_framework_nested import routers
 
 from coral_credits.api import views
 
 router = routers.DefaultRouter()
 router.register(r"resource_class", views.ResourceClassViewSet)
 router.register(r"resource_provider", views.ResourceProviderViewSet)
+router.register(r"resource_provider_account", views.ResourceProviderAccountViewSet)
+router.register(r"allocation", views.CreditAllocationViewSet)
 router.register(r"account", views.AccountViewSet, basename="creditaccount")
-router.register(r"consumer", views.ConsumerViewSet, basename="resourcerequest")
+router.register(r"consumer", views.ConsumerViewSet, basename="resource-request")
+
+allocation_router = routers.NestedSimpleRouter(
+    router, r"allocation", lookup="allocation"
+)
+allocation_router.register(
+    r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
+)
 
 
 def status(request):
@@ -39,8 +48,7 @@ def status(request):
 urlpatterns = [
     path("_status/", status, name="status"),
     path("", include(router.urls)),
+    path("", include(allocation_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("admin/", admin.site.urls),
 ]
-
-urlpatterns += router.urls

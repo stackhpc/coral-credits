@@ -1,70 +1,27 @@
 import json
 import uuid
-from datetime import datetime, timedelta
 
 from django.urls import reverse
-from django.utils.timezone import make_aware
 import pytest
 from rest_framework import status
-from rest_framework.test import APIClient
 
 import coral_credits.api.models as models
 
-PROJECT_ID = "20354d7a-e4fe-47af-8ff6-187bca92f3f9"
-USER_REF = "caa8b54a-eb5e-4134-8ae2-a3946a428ec7"
-START_DATE = make_aware(datetime.now())
-END_DATE = START_DATE + timedelta(days=1)
-
-
-# Fixtures defining all the necessary database entries for testing
-@pytest.fixture
-def resource_classes():
-    vcpu = models.ResourceClass.objects.create(name="VCPU")
-    memory = models.ResourceClass.objects.create(name="MEMORY_MB")
-    disk = models.ResourceClass.objects.create(name="DISK_GB")
-    return vcpu, memory, disk
-
 
 @pytest.fixture
-def provider():
-    return models.ResourceProvider.objects.create(
-        name="Test Provider",
-        email="provider@test.com",
-        info_url="https://testprovider.com",
-    )
-
-
-@pytest.fixture
-def account():
-    return models.CreditAccount.objects.create(email="test@case.com", name="test")
-
-
-@pytest.fixture
-def resource_provider_account(account, provider):
-    return models.ResourceProviderAccount.objects.create(
-        account=account, provider=provider, project_id=PROJECT_ID
-    )
-
-
-@pytest.fixture
-def api_client():
-    return APIClient()
-
-
-@pytest.fixture
-def request_data():
+def request_data(request):
     return {
         "context": {
-            "user_id": USER_REF,
-            "project_id": PROJECT_ID,
+            "user_id": request.config.USER_REF,
+            "project_id": request.config.PROJECT_ID,
             "auth_url": "https://api.example.com:5000/v3",
             "region_name": "RegionOne",
         },
         "lease": {
             "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
             "lease_name": "my_new_lease",
-            "start_date": START_DATE.isoformat(),
-            "end_time": END_DATE.isoformat(),
+            "start_date": request.config.START_DATE.isoformat(),
+            "end_time": request.config.END_DATE.isoformat(),
             "reservations": [
                 {
                     "resource_type": "physical:host",
@@ -84,30 +41,6 @@ def request_data():
     }
 
 
-# credit allocation is parameterised so we can test for sufficient/insufficient credits
-def create_credit_allocation(account, resource_classes, allocation_hours):
-    allocation = models.CreditAllocation.objects.create(
-        account=account, name="test", start=START_DATE, end=END_DATE
-    )
-    vcpu, memory, disk = resource_classes
-    vcpu_allocation = models.CreditAllocationResource.objects.create(
-        allocation=allocation,
-        resource_class=vcpu,
-        resource_hours=allocation_hours["vcpu"],
-    )
-    memory_allocation = models.CreditAllocationResource.objects.create(
-        allocation=allocation,
-        resource_class=memory,
-        resource_hours=allocation_hours["memory"],
-    )
-    disk_allocation = models.CreditAllocationResource.objects.create(
-        allocation=allocation,
-        resource_class=disk,
-        resource_hours=allocation_hours["disk"],
-    )
-    return allocation, (vcpu_allocation, memory_allocation, disk_allocation)
-
-
 @pytest.mark.parametrize(
     "allocation_hours",
     [
@@ -117,18 +50,23 @@ def create_credit_allocation(account, resource_classes, allocation_hours):
 @pytest.mark.django_db
 def test_valid_create_request(
     resource_classes,
-    provider,
-    account,
+    credit_allocation,
+    create_credit_allocation_resources,
     resource_provider_account,
     api_client,
     request_data,
     allocation_hours,
+    request,  # contains pytest global vars
 ):
-    _, credit_allocation_resources = create_credit_allocation(
-        account, resource_classes, allocation_hours
+    START_DATE = request.config.START_DATE
+    END_DATE = request.config.END_DATE
+    USER_REF = request.config.USER_REF
+
+    credit_allocation_resources = create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resourcerequest-list")
+    url = reverse("resource-request-list")
     response = api_client.post(
         url,
         data=json.dumps(request_data),
@@ -184,18 +122,19 @@ def test_valid_create_request(
 @pytest.mark.django_db
 def test_create_request_insufficient_credits(
     resource_classes,
-    provider,
-    account,
+    credit_allocation,
+    create_credit_allocation_resources,
     resource_provider_account,
     api_client,
     request_data,
     allocation_hours,
 ):
-    _, credit_allocation_resources = create_credit_allocation(
-        account, resource_classes, allocation_hours
+
+    create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resourcerequest-list")
+    url = reverse("resource-request-list")
     response = api_client.post(
         url,
         data=json.dumps(request_data),
