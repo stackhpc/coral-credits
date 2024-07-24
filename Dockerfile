@@ -62,5 +62,4 @@ RUN mkdir -p /etc/coral-credits/settings.d
 EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["tini", "-g", "--"]
-#TODO(tylerchristie): use gunicorn + wsgi like azimuth
-CMD ["python", "/coral-credits/manage.py", "runserver", "0.0.0.0:8080"]
+CMD ["/venv/bin/gunicorn", "--config", "/etc/gunicorn/conf.py", "coral_credits.wsgi:application"]
