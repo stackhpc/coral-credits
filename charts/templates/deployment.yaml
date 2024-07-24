@@ -37,10 +37,11 @@ spec:
                 key: password
           {{ end }}
           command: ["/bin/sh"]
-          - -c
-          - >- 
-              python /coral-credits/manage.py migrate &&
-              python /coral-credits/manage.py createsuperuser --no-input
+          args:
+            - -c
+            - >- 
+                python /coral-credits/manage.py migrate &&
+                python /coral-credits/manage.py createsuperuser --no-input
           volumeMounts:
             - name: data
               mountPath: /data
