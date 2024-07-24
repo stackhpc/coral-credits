@@ -9,4 +9,4 @@ type: Opaque
 data:
   password: {{ .Values.settings.superuserPassword | default (randAlphaNum 64) }}
   username: {{ .Values.settings.superuserUsername | default "admin" }}
-  email: {{ .Values.settings.superuserEmail default "admin@mail.com" }}
+  email: {{ .Values.settings.superuserEmail | default "admin@mail.com" }}
