@@ -22,6 +22,7 @@ DATABASES = {
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
+    "rest_framework.authtoken",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -45,8 +46,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Because we are doing token auth, we redirect all traffic to https
+# so tokens aren't exposed in plaintext.
+SECURE_SSL_REDIRECT = True
+
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "etc.coral-credits.auth.XAuthTokenAuthentication",
+    ],
 }
 
 ROOT_URLCONF = "coral_credits.urls"
