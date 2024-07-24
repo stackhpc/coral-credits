@@ -39,7 +39,7 @@ helm upgrade $RELEASE_NAME ./charts \
 	--wait \
 	--timeout 10m \
 	--set-string image.tag=${GITHUB_SHA::7} \
-    --set superuserPassword=$TEST_PASSWORD
+    --set settings.superuserPassword=$TEST_PASSWORD
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
