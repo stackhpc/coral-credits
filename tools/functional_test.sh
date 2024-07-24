@@ -37,7 +37,7 @@ helm upgrade $RELEASE_NAME ./charts \
 	--create-namespace \
 	--install \
 	--wait \
-	--timeout 10m \
+	--timeout 3m \
 	--set-string image.tag=${GITHUB_SHA::7} \
     --set settings.superuserPassword=$TEST_PASSWORD
 
