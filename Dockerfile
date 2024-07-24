@@ -55,7 +55,7 @@ ENV PYTHONUNBUFFERED 1
 # Install application configuration using flexi-settings
 ENV DJANGO_SETTINGS_MODULE flexi_settings.settings
 ENV DJANGO_FLEXI_SETTINGS_ROOT /etc/coral-credits/settings.py
-COPY ./etc/coral-credits /etc/coral-credits
+COPY ./etc/ /etc/
 RUN mkdir -p /etc/coral-credits/settings.d
 
 # By default, serve the app on port 8080 using the app user
