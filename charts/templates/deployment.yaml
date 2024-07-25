@@ -37,11 +37,13 @@ spec:
                 key: password
           {{ end }}
           command: ["/bin/sh"]
+          # Capture exit code from createsuperuser as it is not idempotent.
           args:
             - -c
             - >- 
                 python /coral-credits/manage.py migrate &&
-                python /coral-credits/manage.py createsuperuser --no-input
+                python /coral-credits/manage.py createsuperuser --no-input 
+                || [[ $? -eq 1 && $(echo $?) ]]
           volumeMounts:
             - name: data
               mountPath: /data
