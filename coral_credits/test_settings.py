@@ -56,10 +56,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# Because we are doing token auth, we redirect all traffic to https
-# so tokens aren't exposed in plaintext.
-SECURE_SSL_REDIRECT = True
-
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
