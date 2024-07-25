@@ -42,8 +42,7 @@ spec:
             - -c
             - >- 
                 python /coral-credits/manage.py migrate &&
-                python /coral-credits/manage.py createsuperuser --no-input 
-                || [[ $? -eq 1 && $(echo $?) ]]
+                python /coral-credits/manage.py createsuperuser --no-input || echo $?
           volumeMounts:
             - name: data
               mountPath: /data
