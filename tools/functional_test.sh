@@ -14,7 +14,7 @@ check_port() {
 
 # Function to check HTTP status
 check_http_status() {
-	local status=$(curl -s -o /dev/null -w "%{http_code}" https://$SITE:$PORT/_status/)
+	local status=$(curl -s -o /dev/null -w "%{http_code}" http://$SITE:$PORT/_status/)
 	if [ "$status" -eq 204 ]; then
 		return 0
 	else
@@ -91,7 +91,7 @@ TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
     }" \
-    https://$SITE:$PORT/api-token-auth/ | jq -r '.token')
+    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TOKEN"
 
 AUTH_HEADER="Authorization: X-Auth-Token $TOKEN"
@@ -102,16 +102,16 @@ RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Provider", 
         "email": "provider@test.com",
-        "info_url": "https://testprovider.com"
+        "info_url": "http://testprovider.com"
     }' \
-    https://$SITE:$PORT/resource_provider/ | jq -r '.url')
+    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
 echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' https://$SITE:$PORT/resource_class/ | jq -r '.id')
+VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
@@ -121,7 +121,7 @@ ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    https://$SITE:$PORT/account/ | jq -r '.url')
+    http://$SITE:$PORT/account/ | jq -r '.url')
 echo "Account URL: $ACCOUNT_ID"
 
 PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
@@ -133,7 +133,7 @@ RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"provider\": \"$RESOURCE_PROVIDER_ID\", 
         \"project_id\": \"$PROJECT_ID\"
     }" \
-    https://$SITE:$PORT/resource_provider_account/| jq -r '.id')
+    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
 START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -147,7 +147,7 @@ ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"start\": \"$START_DATE\", 
         \"end\": \"$END_DATE\"
     }" \
-    https://$SITE:$PORT/allocation/ | jq -r '.id')
+    http://$SITE:$PORT/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
@@ -160,7 +160,7 @@ curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
             \"DISK_GB\": 5000
         }
     }" \
-    https://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
+    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
@@ -168,7 +168,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
         \"context\": {
             \"user_id\": \"caa8b54a-eb5e-4134-8ae2-a3946a428ec7\",
             \"project_id\": \"$PROJECT_ID\",
-            \"auth_url\": \"https://api.example.com:5000/v3\",
+            \"auth_url\": \"http://api.example.com:5000/v3\",
             \"region_name\": \"RegionOne\"
         },
         \"lease\": {
@@ -193,7 +193,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             ]
         }
     }" \
-    https://$SITE:$PORT/consumer/)
+    http://$SITE:$PORT/consumer/)
 
 if [ "$RESPONSE" -eq 204 ]; then
 		exit 0
