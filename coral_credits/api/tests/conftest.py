@@ -66,7 +66,7 @@ def credit_allocation(account, request):
 @pytest.fixture
 def api_client(token):
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION="X-Auth-Token " + token.key)
+    client.credentials(HTTP_AUTHORIZATION="Bearer " + token.key)
     return client
 
 

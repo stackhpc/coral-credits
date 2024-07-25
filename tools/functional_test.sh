@@ -94,7 +94,7 @@ TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TOKEN"
 
-AUTH_HEADER="Authorization: X-Auth-Token $TOKEN"
+AUTH_HEADER="Authorization: Bearer $TOKEN"
 
 # 1. Add a resource provider
 echo "Adding a resource provider:"

@@ -49,7 +49,7 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "etc.coral-credits.auth.XAuthTokenAuthentication",
+        "coral_credits.auth.BearerTokenAuthentication",
     ],
 }
 
