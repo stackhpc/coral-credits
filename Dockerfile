@@ -55,12 +55,11 @@ ENV PYTHONUNBUFFERED 1
 # Install application configuration using flexi-settings
 ENV DJANGO_SETTINGS_MODULE flexi_settings.settings
 ENV DJANGO_FLEXI_SETTINGS_ROOT /etc/coral-credits/settings.py
-COPY ./etc/coral-credits /etc/coral-credits
+COPY ./etc/ /etc/
 RUN mkdir -p /etc/coral-credits/settings.d
 
 # By default, serve the app on port 8080 using the app user
 EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["tini", "-g", "--"]
-#TODO(tylerchristie): use gunicorn + wsgi like azimuth
-CMD ["python", "/coral-credits/manage.py", "runserver", "0.0.0.0:8080"]
+CMD ["/venv/bin/gunicorn", "--config", "/etc/gunicorn/conf.py", "coral_credits.wsgi:application"]

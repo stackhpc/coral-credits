@@ -71,6 +71,7 @@ def test_valid_create_request(
         url,
         data=json.dumps(request_data),
         content_type="application/json",
+        secure=True,
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT, (
@@ -139,6 +140,7 @@ def test_create_request_insufficient_credits(
         url,
         data=json.dumps(request_data),
         content_type="application/json",
+        secure=True,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN, (

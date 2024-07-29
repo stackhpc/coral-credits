@@ -18,10 +18,31 @@ spec:
       initContainers:
         - name: migrate-db
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
-          command:
-          - python
-          - /coral-credits/manage.py
-          - migrate
+          env:
+          {{ with (include "coral-credits.djangoSecretName" . ) }}
+          - name: DJANGO_SUPERUSER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: username
+          - name: DJANGO_SUPERUSER_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: email
+          - name: DJANGO_SUPERUSER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ quote . }}
+                key: password
+          {{ end }}
+          command: ["/bin/sh"]
+          # Capture exit code from createsuperuser as it is not idempotent.
+          args:
+            - -c
+            - >- 
+                python /coral-credits/manage.py migrate &&
+                python /coral-credits/manage.py createsuperuser --no-input || echo $?
           volumeMounts:
             - name: data
               mountPath: /data
@@ -53,6 +74,8 @@ spec:
             - name: runtime-settings
               mountPath: /etc/coral-credits/settings.d
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       {{- with .Values.nodeSelector }}
       nodeSelector: {{ toYaml . | nindent 8 }}
       {{- end }}
@@ -69,3 +92,5 @@ spec:
         - name: runtime-settings
           secret:
             secretName: {{ include "coral-credits.fullname" . }}
+        - name: tmp
+          emptyDir: {}

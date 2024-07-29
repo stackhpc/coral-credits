@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
+from rest_framework.authtoken import views as drfviews
 from rest_framework_nested import routers
 
 from coral_credits.api import views
@@ -51,4 +52,6 @@ urlpatterns = [
     path("", include(allocation_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("admin/", admin.site.urls),
+    # TODO(tylerchristie): probably need some permissions/scoping
+    path("api-token-auth/", drfviews.obtain_auth_token),
 ]

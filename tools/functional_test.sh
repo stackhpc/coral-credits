@@ -27,6 +27,7 @@ check_http_status() {
 CHART_NAME="coral-credits"
 RELEASE_NAME=$CHART_NAME
 NAMESPACE=$CHART_NAME
+TEST_PASSWORD="testpassword"
 
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
@@ -36,8 +37,9 @@ helm upgrade $RELEASE_NAME ./charts \
 	--create-namespace \
 	--install \
 	--wait \
-	--timeout 10m \
-	--set-string image.tag=${GITHUB_SHA::7}
+	--timeout 3m \
+	--set-string image.tag=${GITHUB_SHA::7} \
+    --set settings.superuserPassword=$TEST_PASSWORD
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
@@ -80,30 +82,41 @@ done
 echo "Running additional tests..."
 
 # Set up some variables
-AUTH_HEADER="Authorization: Basic YWRtaW46cGFzc3dvcmQ=" # Base64 encoded "admin:password"
 CONTENT_TYPE="Content-Type: application/json"
+
+# Get a token
+echo "Getting an auth token:"
+TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+    "{
+        \"username\": \"admin\", 
+        \"password\": \"$TEST_PASSWORD\"
+    }" \
+    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
+echo "Auth Token: $TOKEN"
+
+AUTH_HEADER="Authorization: Bearer $TOKEN"
 
 # 1. Add a resource provider
 echo "Adding a resource provider:"
-RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Provider", 
         "email": "provider@test.com",
-        "info_url": "https://testprovider.com"
+        "info_url": "http://testprovider.com"
     }' \
     http://$SITE:$PORT/resource_provider/ | jq -r '.url')
 echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
 echo "Adding an account:"
-ACCOUNT_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     '{
         "name": "Test Account", 
         "email": "test@account.com"
@@ -114,7 +127,7 @@ echo "Account URL: $ACCOUNT_ID"
 PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
 # 4. Add a resource provider account 
 echo "Adding a resource provider account:"
-RPA_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"account\": \"$ACCOUNT_ID\", 
         \"provider\": \"$RESOURCE_PROVIDER_ID\", 
@@ -127,7 +140,7 @@ START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 END_DATE=$(date -u -d "+1 day" +"%Y-%m-%dT%H:%M:%SZ")
 # 5. Add some credit allocation
 echo "Adding credit allocation:"
-ALLOCATION_ID=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"name\": \"Test Allocation\", 
         \"account\": \"$ACCOUNT_ID\",
@@ -139,7 +152,7 @@ echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
 echo "Adding allocation to resources:"
-curl -s -X POST -H "$CONTENT_TYPE" -d \
+curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
         \"inventories\": {
             \"VCPU\": 100,
@@ -151,11 +164,11 @@ curl -s -X POST -H "$CONTENT_TYPE" -d \
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
-RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$CONTENT_TYPE" -d "{
+RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d "{
         \"context\": {
             \"user_id\": \"caa8b54a-eb5e-4134-8ae2-a3946a428ec7\",
             \"project_id\": \"$PROJECT_ID\",
-            \"auth_url\": \"https://api.example.com:5000/v3\",
+            \"auth_url\": \"http://api.example.com:5000/v3\",
             \"region_name\": \"RegionOne\"
         },
         \"lease\": {

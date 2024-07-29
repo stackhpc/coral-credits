@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from coral_credits.api import db_exceptions, db_utils, models, serializers
@@ -16,8 +16,7 @@ class CreditAllocationViewSet(viewsets.ModelViewSet):
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAllocationResource.objects.all()
     serializer_class = serializers.CreditAllocationResourceSerializer
-    # TODO(tylerchristie): enable authentication
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, allocation_pk=None):
         """Allocate credits to a dictionary of resource classes.
@@ -66,25 +65,25 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
 class ResourceClassViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceClass.objects.all()
     serializer_class = serializers.ResourceClassSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class ResourceProviderViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProvider.objects.all()
     serializer_class = serializers.ResourceProviderSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProviderAccount.objects.all()
     serializer_class = serializers.ResourceProviderAccountSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAccount.objects.all()
     serializer_class = serializers.CreditAccountSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk=None):
         """Retreives a Credit Account Summary"""
@@ -134,7 +133,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
 
 class ConsumerViewSet(viewsets.ModelViewSet):
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request):
         return self._create_or_update(request)
