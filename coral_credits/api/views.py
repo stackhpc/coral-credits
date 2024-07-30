@@ -160,6 +160,11 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             request, current_lease_required
         )
 
+        # Ignore other types of reservation for now.
+        # TODO(tylerchristie): don't.
+        if any([res.resource_type != "flavor:instance" for res in lease.reservations]):
+            return _http_204_no_content("ignoring request.")
+
         if current_lease_required:
             try:
                 current_consumer, current_resource_requests = (
