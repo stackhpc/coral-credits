@@ -154,11 +154,9 @@ echo "Credit Allocation ID: $ALLOCATION_ID"
 echo "Adding allocation to resources:"
 curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     "{
-        \"inventories\": {
-            \"VCPU\": 100,
-            \"MEMORY_MB\": 24000,
-            \"DISK_GB\": 5000
-        }
+        \"VCPU\": 100,
+        \"MEMORY_MB\": 24000,
+        \"DISK_GB\": 5000
     }" \
     http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
@@ -172,25 +170,22 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             \"region_name\": \"RegionOne\"
         },
         \"lease\": {
-            \"lease_id\": \"e96b5a17-ada0-4034-a5ea-34db024b8e04\",
-            \"lease_name\": \"my_new_lease\",
+            \"id\": \"e96b5a17-ada0-4034-a5ea-34db024b8e04\",
+            \"name\": \"my_new_lease\",
             \"start_date\": \"$START_DATE\",
-            \"end_time\": \"$END_DATE\",
+            \"end_date\": \"$END_DATE\",
             \"reservations\": [
                 {
                     \"resource_type\": \"physical:host\",
                     \"min\": 1,
                     \"max\": 3,
-                    \"resource_requests\": {
-                        \"inventories\": {
-                            \"DISK_GB\": {\"total\": 35},
-                            \"MEMORY_MB\": {\"total\": 1000},
-                            \"VCPU\": {\"total\": 4}
-                        },
-                        \"resource_provider_generation\": 7
-                    }
                 }
-            ]
+            ],
+            \"resource_requests\": {
+                        \"DISK_GB\": 35,
+                        \"MEMORY_MB\": 1000,
+                        \"VCPU\": 4
+                    }
         }
     }" \
     http://$SITE:$PORT/consumer/)

@@ -18,25 +18,22 @@ def request_data(request):
             "region_name": "RegionOne",
         },
         "lease": {
-            "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
-            "lease_name": "my_new_lease",
+            "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            "name": "my_new_lease",
             "start_date": request.config.START_DATE.isoformat(),
-            "end_time": request.config.END_DATE.isoformat(),
+            "end_date": request.config.END_DATE.isoformat(),
             "reservations": [
                 {
                     "resource_type": "physical:host",
                     "min": 1,
                     "max": 3,
-                    "resource_requests": {
-                        "inventories": {
-                            "DISK_GB": {"total": 35},
-                            "MEMORY_MB": {"total": 1000},
-                            "VCPU": {"total": 4},
-                        },
-                        "resource_provider_generation": 7,
-                    },
                 }
             ],
+            "resource_requests": {
+                "DISK_GB": 35,
+                "MEMORY_MB": 1000,
+                "VCPU": 4,
+            },
         },
     }
 

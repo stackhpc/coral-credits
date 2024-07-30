@@ -8,7 +8,9 @@ import coral_credits.api.models as models
 @pytest.fixture
 def request_data():
     return {
-        "inventories": {"VCPU": 50, "MEMORY_MB": 2000, "DISK_GB": 1000},
+        "VCPU": 50,
+        "MEMORY_MB": 2000,
+        "DISK_GB": 1000,
     }
 
 
@@ -40,4 +42,4 @@ def test_credit_allocation_resource_create_success(
     total_cars = models.CreditAllocationResource.objects.filter(
         allocation=credit_allocation
     )
-    assert len(total_cars) == len(request_data["inventories"])
+    assert len(total_cars) == len(request_data)

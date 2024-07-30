@@ -13,15 +13,8 @@ class Context:
 
 
 @dataclass
-class Inventory:
-    data: Dict[str, Any]
-
-
-@dataclass
 class ResourceRequest:
-    inventories: Inventory
-    # TODO(tylerchristie)
-    # resource_provider_generation: int = None
+    resources: Dict[str, Any]
 
 
 @dataclass
@@ -36,7 +29,6 @@ class Reservation:
     resource_type: str
     min: int
     max: int
-    resource_requests: ResourceRequest
     hypervisor_properties: str = None
     resource_properties: str = None
     allocations: List[Allocation] = field(default_factory=list)
@@ -44,15 +36,16 @@ class Reservation:
 
 @dataclass
 class Lease:
-    lease_id: UUID
-    lease_name: str
+    id: UUID
+    name: str
     start_date: datetime
-    end_time: datetime
+    end_date: datetime
     reservations: List[Reservation]
+    resource_requests: ResourceRequest
 
     @property
     def duration(self):
-        return (self.end_time - self.start_date).total_seconds() / 3600
+        return (self.end_date - self.start_date).total_seconds() / 3600
 
 
 @dataclass

@@ -23,7 +23,7 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
 
         Example Request:
         {
-            "inventories": {"VCPU": 50, "MEMORY_MB": 2000, "DISK_GB": 1000},
+            "resources": {"VCPU": 50, "MEMORY_MB": 2000, "DISK_GB": 1000},
         }
         """
 
@@ -59,7 +59,7 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         allocation_request = resource_allocations.create(
             resource_allocations.validated_data
         )
-        return allocation_request.inventories
+        return allocation_request.resources
 
 
 class ResourceClassViewSet(viewsets.ModelViewSet):
@@ -133,6 +133,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
 
 class ConsumerViewSet(viewsets.ModelViewSet):
+    queryset = models.Consumer.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request):
@@ -153,81 +154,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     def _create_or_update(self, request, current_lease_required=False, dry_run=False):
         """Process a request for a reservation.
 
-        Example (blazar) request:
-        {
-            "context": {
-                "user_id": "c631173e-dec0-4bb7-a0c3-f7711153c06c",
-                "project_id": "a0b86a98-b0d3-43cb-948e-00689182efd4",
-                "auth_url": "https://api.example.com:5000/v3",
-                "region_name": "RegionOne"
-            },
-            "lease": {
-                # TODO: "lease_id": "e96b5a17-ada0-4034-a5ea-34db024b8e04"
-                # TODO: "lease_name": "my_new_lease"
-                "start_date": "2020-05-13T00:00:00.012345+02:00",
-                "end_time": "2020-05-14T23:59:00.012345+02:00",
-                "reservations": [
-                {
-                    "resource_type": "physical:host",
-                    "min": 2,
-                    "max": 3,
-                    "hypervisor_properties": "[]",
-                    "resource_properties": "[\"==\", \"$availability_zone\", \"az1\"]",
-                    "allocations": [
-                    {
-                        "id": "1",
-                        "hypervisor_hostname": "32af5a7a-e7a3-4883-a643-828e3f63bf54",
-                        "extra": {
-                        "availability_zone": "az1"
-                        }
-                    },
-                    {
-                        "id": "2",
-                        "hypervisor_hostname": "af69aabd-8386-4053-a6dd-1a983787bd7f",
-                        "extra": {
-                        "availability_zone": "az1"
-                        }
-                    }
-                    ]
-                    # TODO(assumptionsandg): "resource_requests" :
-                    {
-                        # Resource request can be arbitrary, e.g.:
-                        "inventories": {
-                            "DISK_GB": {
-                                "allocation_ratio": 1.0,
-                                "max_unit": 35,
-                                "min_unit": 1,
-                                "reserved": 0,
-                                "step_size": 1,
-                                "total": 35
-                            },
-                            "MEMORY_MB": {
-                                "allocation_ratio": 1.5,
-                                "max_unit": 5825,
-                                "min_unit": 1,
-                                "reserved": 512,
-                                "step_size": 1,
-                                "total": 5825
-                            },
-                            "VCPU": {
-                                "allocation_ratio": 16.0,
-                                "max_unit": 4,
-                                "min_unit": 1,
-                                "reserved": 0,
-                                "step_size": 1,
-                                "total": 4
-                            }
-                        },
-                        "resource_provider_generation": 7
-                    }
-                }
-                ]
-            },
-            "current_lease" :
-                {
-                    # Same as above, only exists if this is an update request
-                }
-        }
+        see consumer_tests.py for example requests.
         """
         context, lease, current_lease = self._validate_request(
             request, current_lease_required
