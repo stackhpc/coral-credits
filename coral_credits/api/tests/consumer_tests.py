@@ -3,13 +3,14 @@ import uuid
 
 from django.urls import reverse
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 from rest_framework import status
 
 import coral_credits.api.models as models
 
 
 @pytest.fixture
-def request_data(request):
+def flavor_request_data(request):
     return {
         "context": {
             "user_id": request.config.USER_REF,
@@ -39,13 +40,16 @@ def request_data(request):
 
 
 @pytest.mark.parametrize(
-    "allocation_hours",
+    "allocation_hours,request_data",
     [
-        ({"vcpu": 96.0, "memory": 24000.0, "disk": 840.0}),
+        (
+            {"vcpu": 96.0, "memory": 24000.0, "disk": 840.0},
+            lazy_fixture("flavor_request_data"),
+        ),
     ],
 )
 @pytest.mark.django_db
-def test_valid_create_request(
+def test_flavor_create_request(
     resource_classes,
     credit_allocation,
     create_credit_allocation_resources,
@@ -112,9 +116,12 @@ def test_valid_create_request(
 
 
 @pytest.mark.parametrize(
-    "allocation_hours",
+    "allocation_hours, request_data",
     [
-        ({"vcpu": 10.0, "memory": 1000.0, "disk": 100.0}),
+        (
+            {"vcpu": 10.0, "memory": 1000.0, "disk": 100.0},
+            lazy_fixture("flavor_request_data"),
+        ),
     ],
 )
 @pytest.mark.django_db
