@@ -157,8 +157,6 @@ class ReservationFactory:
 
     @staticmethod
     def get_instance(**kwargs) -> BaseReservation:
-        print("PRINTING!!!")
-        print(kwargs)
         resource_type = kwargs.get("resource_type")
 
         reservation_classes = {
