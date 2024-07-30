@@ -23,11 +23,14 @@ def flavor_request_data(request):
             "name": "my_new_lease",
             "start_date": request.config.START_DATE.isoformat(),
             "end_date": request.config.END_DATE.isoformat(),
+            "before_end_date": None,
             "reservations": [
                 {
-                    "resource_type": "physical:host",
-                    "min": 1,
-                    "max": 3,
+                    "amount": 2,
+                    "flavor_id": "e26a4241-b83d-4516-8e0e-8ce2665d1966",
+                    "resource_type": "flavor:instance",
+                    "affinity": "None",
+                    "allocations": [],
                 }
             ],
             "resource_requests": {
