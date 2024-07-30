@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 
@@ -24,14 +24,35 @@ class Allocation:
     extra: Dict[str, Any]
 
 
-@dataclass
-class Reservation:
+@dataclass(kw_only=True)
+class BaseReservation:
     resource_type: str
+    allocations: List[Allocation] = field(default_factory=list)
+
+
+@dataclass(kw_only=True)
+class PhysicalReservation(BaseReservation):
     min: int
     max: int
-    hypervisor_properties: str = None
-    resource_properties: str = None
-    allocations: List[Allocation] = field(default_factory=list)
+    hypervisor_properties: Optional[str] = None
+    resource_properties: Optional[str] = None
+
+
+@dataclass(kw_only=True)
+class FlavorReservation(BaseReservation):
+    amount: int
+    flavor_id: str
+    affinity: str = "None"
+
+
+@dataclass(kw_only=True)
+class VirtualReservation(BaseReservation):
+    amount: int
+    vcpus: int
+    memory_mb: int
+    disk_gb: int
+    affinity: str = "None"
+    resource_properties: Optional[str] = None
 
 
 @dataclass
@@ -40,7 +61,7 @@ class Lease:
     name: str
     start_date: datetime
     end_date: datetime
-    reservations: List[Reservation]
+    reservations: List[BaseReservation]
     resource_requests: ResourceRequest
 
     @property

@@ -1,13 +1,18 @@
+from typing import Type
+
 from rest_framework import serializers
 
 from coral_credits.api import models
 from coral_credits.api.business_objects import (
     Allocation,
+    BaseReservation,
     ConsumerRequest,
     Context,
+    FlavorReservation,
     Lease,
-    Reservation,
+    PhysicalReservation,
     ResourceRequest,
+    VirtualReservation,
 )
 
 
@@ -100,25 +105,92 @@ class AllocationSerializer(serializers.Serializer):
         )
 
 
-class ReservationSerializer(serializers.Serializer):
+class BaseReservationSerializer(serializers.Serializer):
     resource_type = serializers.CharField()
-    min = serializers.IntegerField()
-    max = serializers.IntegerField()
-    hypervisor_properties = serializers.CharField(required=False, allow_null=True)
-    resource_properties = serializers.CharField(required=False, allow_null=True)
-    allocations = serializers.ListField(
-        child=AllocationSerializer(), required=False, allow_null=True
-    )
+    allocations = serializers.ListField(child=AllocationSerializer(), required=False)
 
     def create(self, validated_data):
         allocations = [
             AllocationSerializer().create(alloc)
-            for alloc in validated_data.get("allocations", [])
+            for alloc in validated_data.pop("allocations", [])
         ]
-        return Reservation(
+        return ReservationFactory.get_instance(
             **validated_data,
             allocations=allocations,
         )
+
+
+class PhysicalReservationSerializer(BaseReservationSerializer):
+    min = serializers.IntegerField()
+    max = serializers.IntegerField()
+    hypervisor_properties = serializers.CharField(required=False, allow_blank=True)
+    resource_properties = serializers.CharField(required=False, allow_blank=True)
+
+
+class FlavorReservationSerializer(BaseReservationSerializer):
+    amount = serializers.IntegerField()
+    flavor_id = serializers.CharField()
+    affinity = serializers.CharField(required=False, default="None")
+
+
+class VirtualReservationSerializer(BaseReservationSerializer):
+    amount = serializers.IntegerField()
+    vcpus = serializers.IntegerField()
+    memory_mb = serializers.IntegerField()
+    disk_gb = serializers.IntegerField()
+    affinity = serializers.CharField(required=False, default="None")
+    resource_properties = serializers.CharField(required=False, allow_blank=True)
+
+
+class ReservationFactory:
+    @staticmethod
+    def get_serializer(resource_type: str) -> Type[BaseReservationSerializer]:
+        serializers = {
+            "physical:host": PhysicalReservationSerializer,
+            "flavor:instance": FlavorReservationSerializer,
+            "virtual:instance": VirtualReservationSerializer,
+        }
+        serializer = serializers.get(resource_type)
+        if not serializer:
+            raise serializers.ValidationError(f"Unknown resource_type: {resource_type}")
+        return serializer
+
+    @staticmethod
+    def get_instance(**kwargs) -> BaseReservation:
+        print("PRINTING!!!")
+        print(kwargs)
+        resource_type = kwargs.get("resource_type")
+
+        reservation_classes = {
+            "physical:host": PhysicalReservation,
+            "flavor:instance": FlavorReservation,
+            "virtual:instance": VirtualReservation,
+        }
+
+        reservation_class = reservation_classes.get(resource_type)
+        if not reservation_class:
+            raise ValueError(f"Unknown resource_type: {resource_type}")
+
+        return reservation_class(**kwargs)
+
+
+class ReservationField(serializers.Field):
+    def to_internal_value(self, data):
+        resource_type = data.get("resource_type")
+        serializer_class = ReservationFactory.get_serializer(resource_type)
+        serializer = serializer_class(data=data)
+
+        if serializer.is_valid():
+            return serializer.validated_data
+        else:
+            raise serializers.ValidationError(serializer.errors)
+
+    def to_representation(self, instance):
+        if isinstance(instance, dict):
+            resource_type = instance.get("resource_type")
+            serializer_class = ReservationFactory.get_serializer(resource_type)
+            return serializer_class(instance).data
+        return instance
 
 
 class LeaseSerializer(serializers.Serializer):
@@ -133,14 +205,20 @@ class LeaseSerializer(serializers.Serializer):
     start_date = serializers.DateTimeField()
     end_date = serializers.DateTimeField()
     before_end_date = serializers.DateTimeField(required=False, allow_null=True)
-    reservations = serializers.ListField(child=ReservationSerializer())
+    reservations = serializers.ListField(child=ReservationField())
     resource_requests = ResourceRequestSerializer()
 
     def create(self, validated_data):
-        reservations = [
-            ReservationSerializer().create(res)
-            for res in validated_data.pop("reservations")
-        ]
+        reservations = []
+        for res_data in validated_data.pop("reservations"):
+            resource_type = res_data.get("resource_type")
+            serializer_class = ReservationFactory.get_serializer(resource_type)
+            serializer = serializer_class(data=res_data)
+            if serializer.is_valid():
+                reservations.append(serializer.create(serializer.validated_data))
+            else:
+                raise serializers.ValidationError(serializer.errors)
+
         resource_requests = ResourceRequestSerializer().create(
             validated_data.pop("resource_requests")
         )
