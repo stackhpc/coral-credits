@@ -178,14 +178,14 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
                 {
                     \"resource_type\": \"physical:host\",
                     \"min\": 1,
-                    \"max\": 3,
+                    \"max\": 3
                 }
             ],
             \"resource_requests\": {
-                        \"DISK_GB\": 35,
-                        \"MEMORY_MB\": 1000,
-                        \"VCPU\": 4
-                    }
+                \"DISK_GB\": 35,
+                \"MEMORY_MB\": 1000,
+                \"VCPU\": 4
+            }
         }
     }" \
     http://$SITE:$PORT/consumer/)
