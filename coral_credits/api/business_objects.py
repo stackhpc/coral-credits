@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 
@@ -13,15 +13,8 @@ class Context:
 
 
 @dataclass
-class Inventory:
-    data: Dict[str, Any]
-
-
-@dataclass
 class ResourceRequest:
-    inventories: Inventory
-    # TODO(tylerchristie)
-    # resource_provider_generation: int = None
+    resources: Dict[str, Any]
 
 
 @dataclass
@@ -31,28 +24,49 @@ class Allocation:
     extra: Dict[str, Any]
 
 
-@dataclass
-class Reservation:
+@dataclass(kw_only=True)
+class BaseReservation:
     resource_type: str
+    allocations: List[Allocation] = field(default_factory=list)
+
+
+@dataclass(kw_only=True)
+class PhysicalReservation(BaseReservation):
     min: int
     max: int
-    resource_requests: ResourceRequest
-    hypervisor_properties: str = None
-    resource_properties: str = None
-    allocations: List[Allocation] = field(default_factory=list)
+    hypervisor_properties: Optional[str] = None
+    resource_properties: Optional[str] = None
+
+
+@dataclass(kw_only=True)
+class FlavorReservation(BaseReservation):
+    amount: int
+    flavor_id: str
+    affinity: str = "None"
+
+
+@dataclass(kw_only=True)
+class VirtualReservation(BaseReservation):
+    amount: int
+    vcpus: int
+    memory_mb: int
+    disk_gb: int
+    affinity: str = "None"
+    resource_properties: Optional[str] = None
 
 
 @dataclass
 class Lease:
-    lease_id: UUID
-    lease_name: str
+    id: UUID
+    name: str
     start_date: datetime
-    end_time: datetime
-    reservations: List[Reservation]
+    end_date: datetime
+    reservations: List[BaseReservation]
+    resource_requests: ResourceRequest
 
     @property
     def duration(self):
-        return (self.end_time - self.start_date).total_seconds() / 3600
+        return (self.end_date - self.start_date).total_seconds() / 3600
 
 
 @dataclass

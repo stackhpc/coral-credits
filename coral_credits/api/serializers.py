@@ -1,14 +1,18 @@
+from typing import Type
+
 from rest_framework import serializers
 
 from coral_credits.api import models
 from coral_credits.api.business_objects import (
     Allocation,
+    BaseReservation,
     ConsumerRequest,
     Context,
-    Inventory,
+    FlavorReservation,
     Lease,
-    Reservation,
+    PhysicalReservation,
     ResourceRequest,
+    VirtualReservation,
 )
 
 
@@ -77,37 +81,21 @@ class Consumer(serializers.ModelSerializer):
         fields = ["consumer_ref", "resource_provider", "start", "end", "resources"]
 
 
-class InventorySerializer(serializers.Serializer):
-    def to_representation(self, instance):
-        return instance.data
-
-    def to_internal_value(self, data):
-        return data
-
-    def create(self, validated_data):
-        return Inventory(data=validated_data)
-
-
 class ResourceRequestSerializer(serializers.Serializer):
-    inventories = InventorySerializer()
-    # TODO(tylerchristie)
-    # resource_provider_generation = serializers.IntegerField(required=False)
-
     def to_representation(self, instance):
-        return {key: value for key, value in instance.__dict__.items()}
+        return instance.resources
 
     def to_internal_value(self, data):
-        return data
+        return {"resources": data}
 
     def create(self, validated_data):
-        inventories = InventorySerializer().create(validated_data.pop("inventories"))
-        return ResourceRequest(inventories=inventories)
+        return ResourceRequest(**validated_data)
 
 
 class AllocationSerializer(serializers.Serializer):
     id = serializers.CharField()
-    hypervisor_hostname = serializers.UUIDField()
-    extra = serializers.DictField()
+    hypervisor_hostname = serializers.CharField()
+    extra = serializers.DictField(required=False, allow_null=True)
 
     def create(self, validated_data):
         return Allocation(
@@ -117,50 +105,128 @@ class AllocationSerializer(serializers.Serializer):
         )
 
 
-class ReservationSerializer(serializers.Serializer):
+class BaseReservationSerializer(serializers.Serializer):
     resource_type = serializers.CharField()
-    min = serializers.IntegerField()
-    max = serializers.IntegerField()
-    hypervisor_properties = serializers.CharField(required=False, allow_null=True)
-    resource_properties = serializers.CharField(required=False, allow_null=True)
-    allocations = serializers.ListField(
-        child=AllocationSerializer(), required=False, allow_null=True
-    )
-    resource_requests = ResourceRequestSerializer()
+    allocations = serializers.ListField(child=AllocationSerializer(), required=False)
 
     def create(self, validated_data):
         allocations = [
             AllocationSerializer().create(alloc)
-            for alloc in validated_data.get("allocations", [])
+            for alloc in validated_data.pop("allocations", [])
         ]
-        resource_requests = ResourceRequestSerializer().create(
-            validated_data.pop("resource_requests")
-        )
-        return Reservation(
+        return ReservationFactory.get_instance(
             **validated_data,
             allocations=allocations,
-            resource_requests=resource_requests,
         )
+
+
+class PhysicalReservationSerializer(BaseReservationSerializer):
+    min = serializers.IntegerField()
+    max = serializers.IntegerField()
+    hypervisor_properties = serializers.CharField(required=False, allow_blank=True)
+    resource_properties = serializers.CharField(required=False, allow_blank=True)
+
+
+class FlavorReservationSerializer(BaseReservationSerializer):
+    amount = serializers.IntegerField()
+    flavor_id = serializers.CharField()
+    affinity = serializers.CharField(required=False, default="None")
+
+
+class VirtualReservationSerializer(BaseReservationSerializer):
+    amount = serializers.IntegerField()
+    vcpus = serializers.IntegerField()
+    memory_mb = serializers.IntegerField()
+    disk_gb = serializers.IntegerField()
+    affinity = serializers.CharField(required=False, default="None")
+    resource_properties = serializers.CharField(required=False, allow_blank=True)
+
+
+class ReservationFactory:
+    @staticmethod
+    def get_serializer(resource_type: str) -> Type[BaseReservationSerializer]:
+        serializers = {
+            "physical:host": PhysicalReservationSerializer,
+            "flavor:instance": FlavorReservationSerializer,
+            "virtual:instance": VirtualReservationSerializer,
+        }
+        serializer = serializers.get(resource_type)
+        if not serializer:
+            raise serializers.ValidationError(f"Unknown resource_type: {resource_type}")
+        return serializer
+
+    @staticmethod
+    def get_instance(**kwargs) -> BaseReservation:
+        resource_type = kwargs.get("resource_type")
+
+        reservation_classes = {
+            "physical:host": PhysicalReservation,
+            "flavor:instance": FlavorReservation,
+            "virtual:instance": VirtualReservation,
+        }
+
+        reservation_class = reservation_classes.get(resource_type)
+        if not reservation_class:
+            raise ValueError(f"Unknown resource_type: {resource_type}")
+
+        return reservation_class(**kwargs)
+
+
+class ReservationField(serializers.Field):
+    def to_internal_value(self, data):
+        resource_type = data.get("resource_type")
+        serializer_class = ReservationFactory.get_serializer(resource_type)
+        serializer = serializer_class(data=data)
+
+        if serializer.is_valid():
+            return serializer.validated_data
+        else:
+            raise serializers.ValidationError(serializer.errors)
+
+    def to_representation(self, instance):
+        if isinstance(instance, dict):
+            resource_type = instance.get("resource_type")
+            serializer_class = ReservationFactory.get_serializer(resource_type)
+            return serializer_class(instance).data
+        return instance
 
 
 class LeaseSerializer(serializers.Serializer):
-    lease_id = serializers.UUIDField()
-    lease_name = serializers.CharField()
+    def __init__(self, *args, dry_run=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Optional field id
+        self.fields["id"] = serializers.UUIDField(
+            required=(not dry_run), allow_null=dry_run
+        )
+
+    name = serializers.CharField()
     start_date = serializers.DateTimeField()
-    end_time = serializers.DateTimeField()
-    reservations = serializers.ListField(child=ReservationSerializer())
+    end_date = serializers.DateTimeField()
+    before_end_date = serializers.DateTimeField(required=False, allow_null=True)
+    reservations = serializers.ListField(child=ReservationField())
+    resource_requests = ResourceRequestSerializer()
 
     def create(self, validated_data):
-        reservations = [
-            ReservationSerializer().create(res)
-            for res in validated_data.pop("reservations")
-        ]
+        reservations = []
+        for res_data in validated_data.pop("reservations"):
+            resource_type = res_data.get("resource_type")
+            serializer_class = ReservationFactory.get_serializer(resource_type)
+            serializer = serializer_class(data=res_data)
+            if serializer.is_valid():
+                reservations.append(serializer.create(serializer.validated_data))
+            else:
+                raise serializers.ValidationError(serializer.errors)
+
+        resource_requests = ResourceRequestSerializer().create(
+            validated_data.pop("resource_requests")
+        )
         return Lease(
-            lease_id=validated_data["lease_id"],
-            lease_name=validated_data["lease_name"],
+            id=validated_data["id"],
+            name=validated_data["name"],
             start_date=validated_data["start_date"],
-            end_time=validated_data["end_time"],
+            end_date=validated_data["end_date"],
             reservations=reservations,
+            resource_requests=resource_requests,
         )
 
 
@@ -168,7 +234,7 @@ class ContextSerializer(serializers.Serializer):
     user_id = serializers.UUIDField()
     project_id = serializers.UUIDField()
     auth_url = serializers.URLField()
-    region_name = serializers.CharField()
+    region_name = serializers.CharField(required=False, allow_null=True)
 
     def create(self, validated_data):
         return Context(

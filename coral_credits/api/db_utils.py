@@ -6,7 +6,7 @@ from coral_credits.api import db_exceptions, models
 
 def get_current_lease(current_lease):
     current_consumer = get_object_or_404(
-        models.Consumer, consumer_uuid=current_lease.lease_id
+        models.Consumer, consumer_uuid=current_lease.id
     )
     current_resource_requests = models.CreditAllocationResource.objects.filter(
         consumer=current_consumer,
@@ -74,7 +74,7 @@ def get_resource_class(resource_class_name):
     return resource_class
 
 
-def get_valid_allocations(inventories):
+def get_valid_allocations(resources):
     """Validates a dictionary of resource allocations.
 
     Returns a list of dictionaries of the form:
@@ -87,7 +87,7 @@ def get_valid_allocations(inventories):
     """
     try:
         allocations = {}
-        for resource_class_name, resource_hours in inventories.data.items():
+        for resource_class_name, resource_hours in resources.items():
             resource_class = get_resource_class(resource_class_name)
             allocations[resource_class] = float(resource_hours)
     except ValueError:
@@ -106,37 +106,36 @@ def get_resource_requests(lease, current_resource_requests=None):
     """
     resource_requests = {}
 
-    for reservation in lease.reservations:
-        for (
-            resource_type,
-            amount,
-        ) in reservation.resource_requests.inventories.data.items():
-            resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
-            try:
-                # Keep it simple, ust take min for now
-                # TODO(tylerchristie): check we can allocate max
-                # CreditAllocationResource is a record of the number of resource_hours
-                # available for one unit of a ResourceClass, so we multiply
-                # lease_duration by units required.
-                requested_resource_hours = round(
-                    float(amount["total"]) * reservation.min * lease.duration,
-                    1,
+    for (
+        resource_type,
+        amount,
+    ) in lease.resource_requests.resources.items():
+        resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
+        try:
+            # Keep it simple, ust take min for now
+            # TODO(tylerchristie): check we can allocate max
+            # CreditAllocationResource is a record of the number of resource_hours
+            # available for one unit of a ResourceClass, so we multiply
+            # lease_duration by units required.
+            requested_resource_hours = round(
+                float(amount) * lease.duration,
+                1,
+            )
+            if current_resource_requests:
+                delta_resource_hours = calculate_delta_resource_hours(
+                    requested_resource_hours,
+                    current_resource_requests,
+                    resource_class,
                 )
-                if current_resource_requests:
-                    delta_resource_hours = calculate_delta_resource_hours(
-                        requested_resource_hours,
-                        current_resource_requests,
-                        resource_class,
-                    )
-                else:
-                    delta_resource_hours = requested_resource_hours
+            else:
+                delta_resource_hours = requested_resource_hours
 
-                resource_requests[resource_class] = delta_resource_hours
+            resource_requests[resource_class] = delta_resource_hours
 
-            except KeyError:
-                raise db_exceptions.ResourceRequestFormatError(
-                    f"Unable to recognize {resource_type} format {amount}"
-                )
+        except KeyError:
+            raise db_exceptions.ResourceRequestFormatError(
+                f"Unable to recognize {resource_type} format {amount}"
+            )
 
     return resource_requests
 
@@ -201,12 +200,12 @@ def spend_credits(
 ):
 
     consumer = models.Consumer.objects.create(
-        consumer_ref=lease.lease_name,
-        consumer_uuid=lease.lease_id,
+        consumer_ref=lease.name,
+        consumer_uuid=lease.id,
         resource_provider_account=resource_provider_account,
         user_ref=context.user_id,
         start=lease.start_date,
-        end=lease.end_time,
+        end=lease.end_date,
     )
 
     for resource_class in resource_requests:
