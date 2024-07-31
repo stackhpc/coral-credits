@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -156,6 +158,8 @@ class ConsumerViewSet(viewsets.ModelViewSet):
 
         see consumer_tests.py for example requests.
         """
+        # TODO(tylerchristie): remove when blazar has commit hook.
+        request.data["lease"]["id"] = uuid.uuid4()
         context, lease, current_lease = self._validate_request(
             request, current_lease_required
         )
@@ -163,7 +167,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
         # Ignore other types of reservation for now.
         # TODO(tylerchristie): don't.
         if any([res.resource_type != "flavor:instance" for res in lease.reservations]):
-            return _http_204_no_content("ignoring request.")
+            return _http_403_forbidden("Resource type is not supported.")
 
         if current_lease_required:
             try:
