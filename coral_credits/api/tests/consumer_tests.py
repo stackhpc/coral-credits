@@ -8,6 +8,9 @@ from rest_framework import status
 
 import coral_credits.api.models as models
 
+# TODO(tylerchristie): maybe make/use some kind of request factory
+# TODO(tylerchristie): check and commit tests
+
 
 @pytest.fixture
 def flavor_request_data(request):
@@ -19,7 +22,7 @@ def flavor_request_data(request):
             "region_name": "RegionOne",
         },
         "lease": {
-            "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            # "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
             "name": "my_new_lease",
             "start_date": request.config.START_DATE.isoformat(),
             "end_date": request.config.END_DATE.isoformat(),
