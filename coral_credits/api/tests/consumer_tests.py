@@ -42,6 +42,66 @@ def flavor_request_data(request):
     }
 
 
+@pytest.fixture
+def physical_request_data(request):
+    return {
+        "context": {
+            "user_id": request.config.USER_REF,
+            "project_id": request.config.PROJECT_ID,
+            "auth_url": "https://api.example.com:5000/v3",
+            "region_name": "RegionOne",
+        },
+        "lease": {
+            "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            "name": "my_new_lease",
+            "start_date": request.config.START_DATE.isoformat(),
+            "end_date": request.config.END_DATE.isoformat(),
+            "before_end_date": None,
+            "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 1,
+                    "max": 2,
+                    "hypervisor_properties": "",
+                    "resource_properties": "",
+                    "allocations": [],
+                }
+            ],
+        },
+    }
+
+
+@pytest.fixture
+def virtual_request_data(request):
+    return {
+        "context": {
+            "user_id": request.config.USER_REF,
+            "project_id": request.config.PROJECT_ID,
+            "auth_url": "https://api.example.com:5000/v3",
+            "region_name": "RegionOne",
+        },
+        "lease": {
+            "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            "name": "my_new_lease",
+            "start_date": request.config.START_DATE.isoformat(),
+            "end_date": request.config.END_DATE.isoformat(),
+            "before_end_date": None,
+            "reservations": [
+                {
+                    "resource_type": "virtual:instance",
+                    "amount": 1,
+                    "vcpus": 1,
+                    "memory_mb": 1,
+                    "disk_gb": 0,
+                    "affinity": "None",
+                    "resource_properties": "",
+                    "allocations": [],
+                }
+            ],
+        },
+    }
+
+
 @pytest.mark.parametrize(
     "allocation_hours,request_data",
     [
@@ -128,7 +188,7 @@ def test_flavor_create_request(
     ],
 )
 @pytest.mark.django_db
-def test_create_request_insufficient_credits(
+def test_insufficient_credits_create_request(
     resource_classes,
     credit_allocation,
     create_credit_allocation_resources,
@@ -163,3 +223,30 @@ def test_create_request_insufficient_credits(
         assert (
             c.resource_hours > 0
         ), f"CreditAllocationResource for {c.resource_class.name} was depleted"
+
+
+@pytest.mark.parametrize(
+    "request_data",
+    [
+        (lazy_fixture("physical_request_data")),
+        (lazy_fixture("virtual_request_data")),
+    ],
+)
+@pytest.mark.django_db
+def test_invalid_blazar_resource_type_create_request(
+    api_client,
+    request_data,
+):
+    url = reverse("resource-request-list")
+    response = api_client.post(
+        url,
+        data=json.dumps(request_data),
+        content_type="application/json",
+        secure=True,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST, (
+        f"Expected {status.HTTP_400_BAD_REQUEST}. "
+        f"Actual status {response.status_code}. "
+        f"Response text {response.content}"
+    )
