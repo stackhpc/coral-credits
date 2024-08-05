@@ -2,10 +2,10 @@ apiVersion: v1
 entries:
   coral-credits:
   - apiVersion: v2
-    appVersion: ff6cd28
-    created: "2024-08-05T09:23:28.783746663Z"
+    appVersion: d084d9a
+    created: "2024-08-05T09:26:48.458634822Z"
     description: Helm chart for deploying the Coral Credits API.
-    digest: ae25acfad612c04614f830159833d585116bdfa59bef6557bedc3fa94a33d237
+    digest: 912efbd71a576901795d62e4ee9286364eb612cd80d93f5cb67da119259a5d44
     name: coral-credits
     type: application
     urls:
@@ -13,7 +13,7 @@ entries:
     version: 0.2.1-dev.0.ingress.2
   - apiVersion: v2
     appVersion: a4fd054
-    created: "2024-08-05T09:23:28.783266885Z"
+    created: "2024-08-05T09:26:48.458145735Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 617c39270d242ae40747d4e04310407d8705e83c419466f61c06d2a3da73d49f
     name: coral-credits
@@ -21,4 +21,4 @@ entries:
     urls:
     - coral-credits-0.2.0.tgz
     version: 0.2.0
-generated: "2024-08-05T09:23:28.782726984Z"
+generated: "2024-08-05T09:26:48.457582157Z"
