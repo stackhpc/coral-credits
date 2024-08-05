@@ -95,3 +95,119 @@ def create_credit_allocation_resources():
         return (vcpu_allocation, memory_allocation, disk_allocation)
 
     return _create_credit_allocation_resources
+
+
+#####
+# REQUEST DATA
+#####
+
+
+@pytest.fixture
+def base_request_data(request):
+    return {
+        "context": {
+            "user_id": request.config.USER_REF,
+            "project_id": request.config.PROJECT_ID,
+            "auth_url": "https://api.example.com:5000/v3",
+            "region_name": "RegionOne",
+        },
+        "lease": {
+            # "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+            "name": "my_new_lease",
+            "start_date": request.config.START_DATE.isoformat(),
+            "end_date": request.config.END_DATE.isoformat(),
+            "before_end_date": None,
+            "reservations": [],
+        },
+    }
+
+
+@pytest.fixture
+def flavor_request_data(base_request_data):
+    flavor_data = {
+        "lease": {
+            "reservations": [
+                {
+                    "amount": 2,
+                    "flavor_id": "e26a4241-b83d-4516-8e0e-8ce2665d1966",
+                    "resource_type": "flavor:instance",
+                    "affinity": "None",
+                    "allocations": [],
+                }
+            ],
+            "resource_requests": {
+                "DISK_GB": 35,
+                "MEMORY_MB": 1000,
+                "VCPU": 4,
+            },
+        },
+    }
+    return deep_merge(base_request_data, flavor_data)
+
+
+@pytest.fixture
+def flavor_delete_current_request_data(flavor_request_data):
+    delete_request_data = {"lease": {"end_date": datetime.now().isoformat()}}
+    return deep_merge(flavor_request_data, delete_request_data)
+
+
+@pytest.fixture
+def flavor_delete_upcoming_request_data(flavor_request_data, request):
+    delete_request_data = {"lease": {"end_date": request.config.START_DATE.isoformat()}}
+    return deep_merge(flavor_request_data, delete_request_data)
+
+
+@pytest.fixture
+def physical_request_data(base_request_data):
+    physical_request_data = {
+        "lease": {
+            "reservations": [
+                {
+                    "resource_type": "physical:host",
+                    "min": 1,
+                    "max": 2,
+                    "hypervisor_properties": "",
+                    "resource_properties": "",
+                    "allocations": [],
+                }
+            ],
+        },
+    }
+    return deep_merge(base_request_data, physical_request_data)
+
+
+@pytest.fixture
+def virtual_request_data(base_request_data):
+    virtual_request_data = {
+        "lease": {
+            "reservations": [
+                {
+                    "resource_type": "virtual:instance",
+                    "amount": 1,
+                    "vcpus": 1,
+                    "memory_mb": 1,
+                    "disk_gb": 0,
+                    "affinity": "None",
+                    "resource_properties": "",
+                    "allocations": [],
+                }
+            ],
+        },
+    }
+    return deep_merge(base_request_data, virtual_request_data)
+
+
+def deep_merge(defaults, overrides=None):
+    """Recursively merge two dictionaries."""
+    result = defaults.copy()
+    if overrides:
+        for key, value in overrides.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
+                result[key] = deep_merge(result[key], value)
+            else:
+                result[key] = value
+    return result
