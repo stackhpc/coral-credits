@@ -193,7 +193,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
 if [ "$RESPONSE" -eq 204 ]; then
 		echo "All tests completed."
 	else
-		echo "Error: Expected HTTP status code 204, but got $status"
+		echo "Error: Expected HTTP status code 204, but got $RESPONSE"
 		exit 1
 	fi
 
