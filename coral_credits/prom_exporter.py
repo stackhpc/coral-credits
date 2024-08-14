@@ -116,7 +116,7 @@ class CustomCollector(Collector):
         # TODO(tylerchristie) question here: technically an account can have
         # multiple CreditAllocations, so is this metric 3 dimensional?
         coral_credits_allocation_hours_expires_in_days_per_project = GaugeMetricFamily(
-            "coral_credits_allocation_hours_expires_in_days",
+            "coral_credits_allocation_hours_expires_in_days_per_project",
             "Number of days until the credit allocations expire",
             labels=["project_id", "resource_class", "provider"],
         )
@@ -128,7 +128,7 @@ class CustomCollector(Collector):
         yield coral_credits_allocation_hours_expires_in_days_per_project
 
         coral_credits_allocation_hours_valid_since_days_per_project = GaugeMetricFamily(
-            "coral_credits_allocation_hours_vaild_since_days",
+            "coral_credits_allocation_hours_valid_since_days_per_project",
             "Number of days since the credit allocations became active.",
             labels=["project_id", "resource_class", "provider"],
         )

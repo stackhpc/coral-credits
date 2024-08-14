@@ -16,17 +16,13 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
 from django.http import HttpResponse
 from django.urls import include, path
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from prometheus_client.core import REGISTRY
 from rest_framework.authtoken import views as drfviews
 from rest_framework_nested import routers
 
 from coral_credits.api import views
-from coral_credits.prom_exporter import CustomCollector
 
 router = routers.DefaultRouter()
 router.register(r"resource_class", views.ResourceClassViewSet)
@@ -42,11 +38,6 @@ allocation_router = routers.NestedSimpleRouter(
 allocation_router.register(
     r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
 )
-
-
-@receiver(post_migrate)
-def register_prometheus_collector(sender, **kwargs):
-    REGISTRY.register(CustomCollector())
 
 
 def prometheus_metrics(request):
