@@ -1,6 +1,7 @@
 from datetime import datetime
 from itertools import chain
 
+from django.db.utils import OperationalError
 from prometheus_client.core import GaugeMetricFamily
 from prometheus_client.registry import Collector
 
@@ -8,44 +9,60 @@ from coral_credits.api import db_utils
 
 
 def get_credit_allocation_date(date_type):
-    accounts = db_utils.get_all_resource_provider_account()
-    for a in accounts:
-        credit_allocations = db_utils.get_all_credit_allocations(a)
-        provider = db_utils.get_resource_provider(a)
-        credit_allocation_resources = db_utils.get_credit_allocation_resources(
-            credit_allocations
-        )
-        # map credit allocation by CreditAllocation ID)
-        credit_lookup = {alloc.id: alloc for alloc in credit_allocations}
-        # project_id, resource_class, provider, days
-        for resource_class, resource_allocation in credit_allocation_resources.items():
-            credit_allocation = credit_lookup.get(resource_allocation.allocation)
-            # get either 'expires in' or 'valid from' based on date_type parameter.
-            days = (getattr(credit_allocation, date_type) - datetime.now()).days()
-            yield a.project_id, resource_class.name, provider, days
+    try:
+        accounts = db_utils.get_all_resource_provider_account()
+        for a in accounts:
+            credit_allocations = db_utils.get_all_credit_allocations(a)
+            provider = db_utils.get_resource_provider(a)
+            credit_allocation_resources = db_utils.get_credit_allocation_resources(
+                credit_allocations
+            )
+            # map credit allocation by CreditAllocation ID)
+            credit_lookup = {alloc.id: alloc for alloc in credit_allocations}
+            # project_id, resource_class, provider, days
+            for (
+                resource_class,
+                resource_allocation,
+            ) in credit_allocation_resources.items():
+                credit_allocation = credit_lookup.get(resource_allocation.allocation)
+                # get either 'expires in' or 'valid from' based on date_type parameter.
+                days = (getattr(credit_allocation, date_type) - datetime.now()).days()
+                yield a.project_id, resource_class.name, provider, days
+    # Database not yet ready
+    except OperationalError:
+        pass
 
 
 def get_free_hours():
-    accounts = db_utils.get_all_resource_provider_account()
-    for a in accounts:
-        credit_allocations = db_utils.get_all_credit_allocations(a)
-        provider = db_utils.get_resource_provider(a)
-        credit_allocation_resources = db_utils.get_credit_allocation_resources(
-            credit_allocations
-        )
-        # project_id, resource_class, provider, resource_hours
-        for resource_class, allocation in credit_allocation_resources.items():
-            yield a.project_id, resource_class.name, provider, allocation.resource_hours
+    try:
+        accounts = db_utils.get_all_resource_provider_account()
+        for a in accounts:
+            credit_allocations = db_utils.get_all_credit_allocations(a)
+            provider = db_utils.get_resource_provider(a)
+            credit_allocation_resources = db_utils.get_credit_allocation_resources(
+                credit_allocations
+            )
+            # project_id, resource_class, provider, resource_hours
+            for resource_class, allocation in credit_allocation_resources.items():
+                yield a.project_id, resource_class.name,
+                provider, allocation.resource_hours
+    # Database not yet ready
+    except OperationalError:
+        pass
 
 
 def get_reserved_hours():
-    accounts = db_utils.get_all_resource_provider_account()
-    for a in accounts:
-        resources = db_utils.get_all_active_reservations(a)
-        provider = db_utils.get_resource_provider(a)
-        for resource_class, resource_hours in resources.items():
-            # project_id, resource_class, provider, resource_hours
-            yield a.project_id, resource_class.name, provider.name, resource_hours
+    try:
+        accounts = db_utils.get_all_resource_provider_account()
+        for a in accounts:
+            resources = db_utils.get_all_active_reservations(a)
+            provider = db_utils.get_resource_provider(a)
+            for resource_class, resource_hours in resources.items():
+                # project_id, resource_class, provider, resource_hours
+                yield a.project_id, resource_class.name, provider.name, resource_hours
+    # Database not yet ready
+    except OperationalError:
+        pass
 
 
 def get_total_hours():
