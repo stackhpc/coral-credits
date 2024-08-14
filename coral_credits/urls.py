@@ -16,6 +16,8 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 from django.http import HttpResponse
 from django.urls import include, path
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -41,7 +43,9 @@ allocation_router.register(
     r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
 )
 
-REGISTRY.register(CustomCollector())
+@receiver(post_migrate)
+def register_prometheus_collector(sender, **kwargs):
+    REGISTRY.register(CustomCollector())
 
 
 def prometheus_metrics(request):
