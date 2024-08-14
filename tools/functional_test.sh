@@ -105,7 +105,7 @@ TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
     }" \
-    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
+    https://$SITE/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TOKEN"
 
 AUTH_HEADER="Authorization: Bearer $TOKEN"
@@ -118,14 +118,14 @@ RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "email": "provider@test.com",
         "info_url": "http://testprovider.com"
     }' \
-    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
+    https://$SITE/resource_provider/ | jq -r '.url')
 echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' https://$SITE/resource_class/ | jq -r '.id')
+MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' https://$SITE/resource_class/ | jq -r '.id')
+DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' https://$SITE/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
@@ -135,7 +135,7 @@ ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    http://$SITE:$PORT/account/ | jq -r '.url')
+    https://$SITE/account/ | jq -r '.url')
 echo "Account URL: $ACCOUNT_ID"
 
 PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
@@ -147,7 +147,7 @@ RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"provider\": \"$RESOURCE_PROVIDER_ID\", 
         \"project_id\": \"$PROJECT_ID\"
     }" \
-    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
+    https://$SITE/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
 START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -161,7 +161,7 @@ ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"start\": \"$START_DATE\", 
         \"end\": \"$END_DATE\"
     }" \
-    http://$SITE:$PORT/allocation/ | jq -r '.id')
+    https://$SITE/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
@@ -172,7 +172,7 @@ curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"MEMORY_MB\": 24000,
         \"DISK_GB\": 5000
     }" \
-    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
+    https://$SITE/allocation/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
@@ -202,7 +202,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             }
         }
     }" \
-    http://$SITE:$PORT/consumer/)
+    https://$SITE/consumer/)
 
 if [ "$RESPONSE" -eq 204 ]; then
 		exit 0
