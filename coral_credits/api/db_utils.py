@@ -25,6 +25,7 @@ def get_all_resource_provider_account():
     resource_provider_accounts = models.ResourceProviderAccount.objects.all()
     return resource_provider_accounts
 
+
 def get_all_active_reservations(resource_provider_account):
     """Get all active reservation resources for an account:
 
