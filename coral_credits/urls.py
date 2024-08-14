@@ -18,10 +18,13 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client.core import REGISTRY
 from rest_framework.authtoken import views as drfviews
 from rest_framework_nested import routers
 
 from coral_credits.api import views
+from coral_credits.prom_exporter import CustomCollector
 
 router = routers.DefaultRouter()
 router.register(r"resource_class", views.ResourceClassViewSet)
@@ -38,6 +41,12 @@ allocation_router.register(
     r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
 )
 
+REGISTRY.register(CustomCollector())
+
+
+def prometheus_metrics(request):
+    return HttpResponse(generate_latest(), content_type=CONTENT_TYPE_LATEST)
+
 
 def status(request):
     # Just return 204 No Content
@@ -47,6 +56,7 @@ def status(request):
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
+    path("metrics", prometheus_metrics, name="prometheus-metrics"),
     path("_status/", status, name="status"),
     path("", include(router.urls)),
     path("", include(allocation_router.urls)),
