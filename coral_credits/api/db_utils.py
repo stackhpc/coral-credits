@@ -110,10 +110,7 @@ def get_credit_allocation_resources(credit_allocations, resource_classes=None):
                 )
             )
             for car in credit_allocation_resources:
-                resource_class = models.ResourceClass.objects.filter(
-                    id=car.resource_class
-                ).first()
-                resource_allocations[resource_class] = credit_allocation_resource
+                resource_allocations[car.resource_class] = credit_allocation_resource
 
     return resource_allocations
 
