@@ -56,7 +56,7 @@ def status(request):
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path("metrics", prometheus_metrics, name="prometheus-metrics"),
+    path("metrics/", prometheus_metrics, name="prometheus-metrics"),
     path("_status/", status, name="status"),
     path("", include(router.urls)),
     path("", include(allocation_router.urls)),
