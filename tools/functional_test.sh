@@ -4,7 +4,7 @@ set -eux
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-PORT=443
+PORT=80
 SITE=localhost
 # Function to check if port is open
 check_port() {
@@ -14,7 +14,7 @@ check_port() {
 
 # Function to check HTTP status
 check_http_status() {
-	local status=$(curl -s -o /dev/null -w "%{http_code}" https://$SITE/_status/)
+	local status=$(curl -s -o /dev/null -w "%{http_code}" http://$SITE/_status/)
 	if [ "$status" -eq 204 ]; then
 		return 0
 	else
@@ -25,7 +25,6 @@ check_http_status() {
 
 # Set variables
 CHART_NAME="coral-credits"
-CERT_NAME="coral-secret"
 RELEASE_NAME=$CHART_NAME
 NAMESPACE=$CHART_NAME
 TEST_PASSWORD="testpassword"
@@ -36,12 +35,6 @@ kubectl wait --namespace ingress-nginx \
   --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller \
   --timeout=90s
-
-# Generate self-signed certificate
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout $CERT_NAME.key -out $CERT_NAME.crt -subj "/CN=${SITE}/O=${SITE}" -addext "subjectAltName = DNS:${SITE}"
-
-# Create cluster secret
-kubectl create secret tls $CERT_NAME --key $CERT_NAME.key --cert $CERT_NAME.crt
 
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
@@ -55,7 +48,7 @@ helm upgrade $RELEASE_NAME ./charts \
 	--set-string image.tag=${GITHUB_SHA::7} \
     --set settings.superuserPassword=$TEST_PASSWORD \
     --set ingress.host=$SITE \
-    --set ingress.tls.secretName=$CERT_NAME \
+    --set ingress.tls.enabled=false 
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
@@ -105,7 +98,7 @@ TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
     }" \
-    https://$SITE/api-token-auth/ | jq -r '.token')
+    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TOKEN"
 
 AUTH_HEADER="Authorization: Bearer $TOKEN"
@@ -118,14 +111,14 @@ RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "email": "provider@test.com",
         "info_url": "http://testprovider.com"
     }' \
-    https://$SITE/resource_provider/ | jq -r '.url')
+    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
 echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
 
 # 2. Add resource classes
 echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' https://$SITE/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' https://$SITE/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' https://$SITE/resource_class/ | jq -r '.id')
+VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
+DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
 echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
 
 # 3. Add an account
@@ -135,7 +128,7 @@ ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         "name": "Test Account", 
         "email": "test@account.com"
     }' \
-    https://$SITE/account/ | jq -r '.url')
+    http://$SITE:$PORT/account/ | jq -r '.url')
 echo "Account URL: $ACCOUNT_ID"
 
 PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
@@ -147,7 +140,7 @@ RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"provider\": \"$RESOURCE_PROVIDER_ID\", 
         \"project_id\": \"$PROJECT_ID\"
     }" \
-    https://$SITE/resource_provider_account/| jq -r '.id')
+    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
 echo "Resource Provider Account ID: $RPA_ID"
 
 START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -161,7 +154,7 @@ ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"start\": \"$START_DATE\", 
         \"end\": \"$END_DATE\"
     }" \
-    https://$SITE/allocation/ | jq -r '.id')
+    http://$SITE:$PORT/allocation/ | jq -r '.id')
 echo "Credit Allocation ID: $ALLOCATION_ID"
 
 # 6. Add allocation to resource
@@ -172,7 +165,7 @@ curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
         \"MEMORY_MB\": 24000,
         \"DISK_GB\": 5000
     }" \
-    https://$SITE/allocation/$ALLOCATION_ID/resources/
+    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
 # 7. Do a consumer create
 echo "Creating a consumer:"
@@ -202,7 +195,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             }
         }
     }" \
-    https://$SITE/consumer/)
+    http://$SITE:$PORT/consumer/)
 
 if [ "$RESPONSE" -eq 204 ]; then
 		exit 0
