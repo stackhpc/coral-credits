@@ -1,8 +1,11 @@
+import logging
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from coral_credits.api import db_exceptions, models
 
+LOG = logging.getLogger(__name__)
 
 def get_current_lease(current_lease):
     current_consumer = get_object_or_404(
@@ -181,6 +184,9 @@ def get_resource_requests(lease, current_resource_requests=None):
                 )
             else:
                 delta_resource_hours = requested_resource_hours
+            
+            LOG.info(f"Calculated {delta_resource_hours} hours for lease {lease.id} with requests "
+                     f"{{resource_class: {resource_class}, amount: {amount}, duration: {lease.duration}}}")
 
             resource_requests[resource_class] = delta_resource_hours
 
