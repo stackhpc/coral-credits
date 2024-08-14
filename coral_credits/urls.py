@@ -43,6 +43,7 @@ allocation_router.register(
     r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
 )
 
+
 @receiver(post_migrate)
 def register_prometheus_collector(sender, **kwargs):
     REGISTRY.register(CustomCollector())
