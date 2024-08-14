@@ -1,8 +1,10 @@
 from datetime import datetime
 from itertools import chain
 import logging
+import traceback
 
 from django.db.utils import OperationalError
+from django.utils.timezone import make_aware
 from prometheus_client.core import GaugeMetricFamily
 from prometheus_client.registry import Collector
 
@@ -14,27 +16,28 @@ LOG = logging.getLogger(__name__)
 def get_credit_allocation_date(date_type):
     try:
         accounts = db_utils.get_all_resource_provider_account()
+        LOG.info(f"{len(accounts)} resource provider accounts (RPAs) currently active.")
         for a in accounts:
             credit_allocations = db_utils.get_all_credit_allocations(a)
+            LOG.info(f"{len(credit_allocations)} active credit allocations for project "
+                     f"{str(a.project_id)}")
             credit_allocation_resources = db_utils.get_all_credit_allocation_resources(
                 credit_allocations
             )
-            # map credit allocation by CreditAllocation ID)
-            credit_lookup = {alloc.id: alloc for alloc in credit_allocations}
             # project_id, resource_class, provider, days
             for (
                 resource_class,
                 resource_allocation,
             ) in credit_allocation_resources.items():
-                credit_allocation = credit_lookup.get(resource_allocation.allocation)
                 # get either 'expires in' or 'valid from' based on date_type parameter.
-                days = (getattr(credit_allocation, date_type) - datetime.now()).days()
+                days = (getattr(resource_allocation.allocation, date_type) - make_aware(datetime.now())).days
                 yield (str(a.project_id), resource_class.name, a.provider.name, days)
     # Database not yet ready
     except OperationalError as e:
         LOG.warn(f"Database not ready yet: {e}")
     except Exception as e:
         LOG.error(f"Unexpected exception: {e}")
+        LOG.error(f"Traceback: {traceback.format_exc()}")
 
 
 def get_free_hours():
@@ -58,6 +61,7 @@ def get_free_hours():
         LOG.warn(f"Database not ready yet: {e}")
     except Exception as e:
         LOG.error(f"Unexpected exception: {e}")
+        LOG.error(f"Traceback: {traceback.format_exc()}")
 
 
 def get_reserved_hours():
@@ -78,6 +82,7 @@ def get_reserved_hours():
         LOG.warning(f"Database not ready yet: {e}")
     except Exception as e:
         LOG.error(f"Unexpected exception: {e}")
+        LOG.error(f"Traceback: {traceback.format_exc()}")
 
 
 def get_total_hours():

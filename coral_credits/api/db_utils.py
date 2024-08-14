@@ -50,13 +50,10 @@ def get_all_active_reservations(resource_provider_account):
             consumer=c
         )
         for rcr in resource_consumption_records:
-            resource_class = models.ResourceClass.objects.filter(
-                id=rcr.resource_class
-            ).first()
-            if resource_class in resources:
-                resources[resource_class] += rcr.resource_hours
+            if rcr.resource_class in resources:
+                resources[rcr.resource_class] += rcr.resource_hours
             else:
-                resources[resource_class] = rcr.resource_hours
+                resources[rcr.resource_class] = rcr.resource_hours
     return resources
 
 
