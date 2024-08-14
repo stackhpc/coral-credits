@@ -206,3 +206,8 @@ if [ "$RESPONSE" -eq 204 ]; then
 
 # Scrape prometheus metrics: 
 curl -s http://$SITE:$PORT/metrics/
+
+# Pod logs
+SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"
+POD_NAME=$(kubectl get pods -n $NAMESPACE -l $SELECTOR -o jsonpath="{.items[0].metadata.name}")
+kubectl logs -n $NAMESPACE $POD_NAME
