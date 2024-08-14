@@ -15,4 +15,4 @@ class ApiConfig(AppConfig):
             from prometheus_client.core import REGISTRY
 
             REGISTRY.register(CustomCollector())
-            os.environ["REGISTER_PROM_COLLECTOR"] == "true"
+            os.environ["REGISTER_PROM_COLLECTOR"] = "true"
