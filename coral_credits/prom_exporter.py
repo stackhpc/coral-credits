@@ -29,7 +29,7 @@ def get_credit_allocation_date(date_type):
                 credit_allocation = credit_lookup.get(resource_allocation.allocation)
                 # get either 'expires in' or 'valid from' based on date_type parameter.
                 days = (getattr(credit_allocation, date_type) - datetime.now()).days()
-                yield a.project_id, resource_class.name, a.provider.name, days
+                yield (str(a.project_id), resource_class.name, a.provider.name, days)
     # Database not yet ready
     except OperationalError as e:
         LOG.warn(f"Database not ready yet: {e}")
@@ -48,7 +48,7 @@ def get_free_hours():
             # project_id, resource_class, provider, resource_hours
             for resource_class, allocation in credit_allocation_resources.items():
                 yield (
-                    a.project_id,
+                    str(a.project_id),
                     resource_class.name,
                     a.provider.name,
                     allocation.resource_hours,
@@ -67,7 +67,12 @@ def get_reserved_hours():
             resources = db_utils.get_all_active_reservations(a)
             for resource_class, resource_hours in resources.items():
                 # project_id, resource_class, provider, resource_hours
-                yield a.project_id, resource_class.name, a.provider.name, resource_hours
+                yield (
+                    str(a.project_id),
+                    resource_class.name,
+                    a.provider.name,
+                    resource_hours,
+                )
     # Database not yet ready
     except OperationalError as e:
         LOG.warning(f"Database not ready yet: {e}")
