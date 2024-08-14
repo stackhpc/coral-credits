@@ -1,11 +1,14 @@
 from datetime import datetime
 from itertools import chain
+import logging
 
 from django.db.utils import OperationalError
 from prometheus_client.core import GaugeMetricFamily
 from prometheus_client.registry import Collector
 
 from coral_credits.api import db_utils
+
+LOG = logging.getLogger(__name__)
 
 
 def get_credit_allocation_date(date_type):
@@ -28,8 +31,10 @@ def get_credit_allocation_date(date_type):
                 days = (getattr(credit_allocation, date_type) - datetime.now()).days()
                 yield a.project_id, resource_class.name, a.provider.name, days
     # Database not yet ready
-    except OperationalError:
-        pass
+    except OperationalError as e:
+        LOG.warn(f"Database not ready yet: {e}")
+    except Exception as e:
+        LOG.error(f"Unexpected exception: {e}")
 
 
 def get_free_hours():
@@ -42,11 +47,17 @@ def get_free_hours():
             )
             # project_id, resource_class, provider, resource_hours
             for resource_class, allocation in credit_allocation_resources.items():
-                yield a.project_id, resource_class.name,
-                a.provider.name, allocation.resource_hours
+                yield (
+                    a.project_id,
+                    resource_class.name,
+                    a.provider.name,
+                    allocation.resource_hours,
+                )
     # Database not yet ready
-    except OperationalError:
-        pass
+    except OperationalError as e:
+        LOG.warn(f"Database not ready yet: {e}")
+    except Exception as e:
+        LOG.error(f"Unexpected exception: {e}")
 
 
 def get_reserved_hours():
@@ -58,21 +69,28 @@ def get_reserved_hours():
                 # project_id, resource_class, provider, resource_hours
                 yield a.project_id, resource_class.name, a.provider.name, resource_hours
     # Database not yet ready
-    except OperationalError:
-        pass
+    except OperationalError as e:
+        LOG.warning(f"Database not ready yet: {e}")
+    except Exception as e:
+        LOG.error(f"Unexpected exception: {e}")
 
 
 def get_total_hours():
     total_hours = {}
 
     # TODO(tylerchristie): calling these methods twice, probably more efficient method.
-    for pid, rc, prov, hours in chain(get_free_hours(), get_reserved_hours()):
+    for item in chain(get_free_hours(), get_reserved_hours()):
+        if len(item) != 4:
+            LOG.warning(f"Skipping unexpected item: {item}")
+            continue
+        pid, rc, prov, hours = item
         key = (pid, rc, prov)
         total_hours[key] = total_hours.get(key, 0) + hours
 
     # project_id, resource_class, provider, resource_hours
-    for (pid, rc, prov), total_hours in total_hours.items():
-        yield pid, rc, prov, total_hours
+    if len(total_hours) > 0:
+        for (pid, rc, prov), total_hours in total_hours.items():
+            yield pid, rc, prov, total_hours
 
 
 class CustomCollector(Collector):
