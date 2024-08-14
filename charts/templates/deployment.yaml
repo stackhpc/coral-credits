@@ -41,7 +41,7 @@ spec:
           args:
             - -c
             - >- 
-                python /coral-credits/manage.py migrate &&
+                python /coral-credits/manage.py migrate --run-syncdb &&
                 python /coral-credits/manage.py createsuperuser --no-input || echo $?
           volumeMounts:
             - name: data
