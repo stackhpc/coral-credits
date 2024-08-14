@@ -182,10 +182,10 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             \"start_date\": \"$START_DATE\",
             \"end_date\": \"$END_DATE\",
             \"reservations\": [
-                {
-                    \"resource_type\": \"physical:host\",
-                    \"min\": 1,
-                    \"max\": 3
+                {   \"amount\": \"2\"
+                    \"resource_type\": \"flavor:instance\",
+                    \"affinity\" : \"None\"
+                    \"allocations\": []
                 }
             ],
             \"resource_requests\": {
