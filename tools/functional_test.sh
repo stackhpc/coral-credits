@@ -183,6 +183,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             \"end_date\": \"$END_DATE\",
             \"reservations\": [
                 {   \"amount\": \"2\",
+                    \"flavor_id\": \"e26a4241-b83d-4516-8e0e-8ce2665d1966\", 
                     \"resource_type\": \"flavor:instance\",
                     \"affinity\" : \"None\",
                     \"allocations\": []
