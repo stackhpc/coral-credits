@@ -19,8 +19,10 @@ def get_credit_allocation_date(date_type):
         LOG.info(f"{len(accounts)} resource provider accounts (RPAs) currently active.")
         for a in accounts:
             credit_allocations = db_utils.get_all_credit_allocations(a)
-            LOG.info(f"{len(credit_allocations)} active credit allocations for project "
-                     f"{str(a.project_id)}")
+            LOG.info(
+                f"{len(credit_allocations)} active credit allocations for project "
+                f"{str(a.project_id)}"
+            )
             credit_allocation_resources = db_utils.get_all_credit_allocation_resources(
                 credit_allocations
             )
@@ -30,7 +32,10 @@ def get_credit_allocation_date(date_type):
                 resource_allocation,
             ) in credit_allocation_resources.items():
                 # get either 'expires in' or 'valid from' based on date_type parameter.
-                days = (getattr(resource_allocation.allocation, date_type) - make_aware(datetime.now())).days
+                days = (
+                    getattr(resource_allocation.allocation, date_type)
+                    - make_aware(datetime.now())
+                ).days
                 yield (str(a.project_id), resource_class.name, a.provider.name, days)
     # Database not yet ready
     except OperationalError as e:
