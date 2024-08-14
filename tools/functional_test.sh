@@ -198,4 +198,4 @@ if [ "$RESPONSE" -eq 204 ]; then
 	fi
 
 # Scrape prometheus metrics: 
-curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" http://$SITE:$PORT/metrics/
+curl -s http://$SITE:$PORT/metrics/
