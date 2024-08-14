@@ -78,7 +78,25 @@ def get_all_credit_allocations(resource_provider_account):
     return credit_allocations
 
 
-def get_credit_allocation_resources(credit_allocations, resource_classes=None):
+def get_credit_allocation_resources(credit_allocations, resource_classes):
+    """Returns a dictionary of the form:
+
+    {
+        "resource_class": "credit_resource_allocation"
+    }
+    """
+    credit_allocation_resources = get_all_credit_allocation_resources(
+        credit_allocations
+    )
+    for resource_class in resource_classes:
+        if resource_class not in credit_allocation_resources:
+            raise db_exceptions.NoCreditAllocation(
+                f"No credit allocated for resource_type {resource_class}"
+            )
+    return credit_allocation_resources
+
+
+def get_all_credit_allocation_resources(credit_allocations):
     """Returns a dictionary of the form:
 
     {
@@ -87,30 +105,13 @@ def get_credit_allocation_resources(credit_allocations, resource_classes=None):
     """
     resource_allocations = {}
     for credit_allocation in credit_allocations:
-        # If resource classes specified, search for these.
-        # Else, find any associated resources.
-        if resource_classes:
-            for resource_class in resource_classes:
-                credit_allocation_resource = (
-                    models.CreditAllocationResource.objects.filter(
-                        allocation=credit_allocation, resource_class=resource_class
-                    ).first()
-                )
-                if not credit_allocation_resource:
-                    raise db_exceptions.NoCreditAllocation(
-                        f"No credit allocated for resource_type {resource_class}"
-                    )
-                # TODO(tylerchristie): I think this breaks for the case where we have
-                # multiple credit allocations for the same resource_class.
-                resource_allocations[resource_class] = credit_allocation_resource
-        else:
-            credit_allocation_resources = (
-                models.CreditAllocationResource.objects.filter(
-                    allocation=credit_allocation
-                )
-            )
-            for car in credit_allocation_resources:
-                resource_allocations[car.resource_class] = credit_allocation_resource
+        credit_allocation_resources = models.CreditAllocationResource.objects.filter(
+            allocation=credit_allocation
+        )
+        # TODO(tylerchristie): I think this breaks for the case where we have
+        # multiple credit allocations for the same resource_class.
+        for car in credit_allocation_resources:
+            resource_allocations[car.resource_class] = car
 
     return resource_allocations
 

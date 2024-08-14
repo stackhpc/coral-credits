@@ -13,7 +13,7 @@ def get_credit_allocation_date(date_type):
         accounts = db_utils.get_all_resource_provider_account()
         for a in accounts:
             credit_allocations = db_utils.get_all_credit_allocations(a)
-            credit_allocation_resources = db_utils.get_credit_allocation_resources(
+            credit_allocation_resources = db_utils.get_all_credit_allocation_resources(
                 credit_allocations
             )
             # map credit allocation by CreditAllocation ID)
@@ -37,7 +37,7 @@ def get_free_hours():
         accounts = db_utils.get_all_resource_provider_account()
         for a in accounts:
             credit_allocations = db_utils.get_all_credit_allocations(a)
-            credit_allocation_resources = db_utils.get_credit_allocation_resources(
+            credit_allocation_resources = db_utils.get_all_credit_allocation_resources(
                 credit_allocations
             )
             # project_id, resource_class, provider, resource_hours
