@@ -21,6 +21,47 @@ def get_resource_provider_account(project_id):
     return resource_provider_account
 
 
+def get_all_resource_provider_account():
+    resource_provider_accounts = models.ResourceProviderAccount.objects.all()
+    return resource_provider_accounts
+
+
+def get_resource_provider(resource_provider_account):
+    return models.ResourceProvider.objects.filter(
+        id=resource_provider_account.provider
+    ).first()
+
+
+def get_all_active_reservations(resource_provider_account):
+    """Get all active reservation resources for an account:
+
+    Returns a list of dictionaries of the form:
+    [
+        {"resource_class": "resource_hours"},
+        {"resource_class": "resource_hours"},
+        ...
+    ]
+    """
+    # TODO(tylerchristie): can probably refactor the credit check with this function.
+    resources = {}
+    consumers = models.Consumer.objects.filter(
+        resource_provider_account=resource_provider_account
+    )
+    for c in consumers:
+        resource_consumption_records = models.ResourceConsumptionRecord.objects.filter(
+            consumer=c
+        )
+        for rcr in resource_consumption_records:
+            resource_class = models.ResourceClass.objects.filter(
+                id=rcr.resource_class
+            ).first()
+            if resource_class in resources:
+                resources[resource_class] += rcr.resource_hours
+            else:
+                resources[resource_class] = rcr.resource_hours
+    return resources
+
+
 def get_credit_allocation(id):
     now = timezone.now()
     try:
@@ -38,12 +79,12 @@ def get_all_credit_allocations(resource_provider_account):
     now = timezone.now()
     credit_allocations = models.CreditAllocation.objects.filter(
         account=resource_provider_account.account, start__lte=now, end__gte=now
-    ).order_by("-start")
+    ).order_by("pk")
 
     return credit_allocations
 
 
-def get_credit_allocation_resources(credit_allocations, resource_classes):
+def get_credit_allocation_resources(credit_allocations, resource_classes=None):
     """Returns a dictionary of the form:
 
     {
@@ -52,15 +93,34 @@ def get_credit_allocation_resources(credit_allocations, resource_classes):
     """
     resource_allocations = {}
     for credit_allocation in credit_allocations:
-        for resource_class in resource_classes:
-            credit_allocation_resource = models.CreditAllocationResource.objects.filter(
-                allocation=credit_allocation, resource_class=resource_class
-            ).first()
-            if not credit_allocation_resource:
-                raise db_exceptions.NoCreditAllocation(
-                    f"No credit allocated for resource_type {resource_class}"
+        # If resource classes specified, search for these.
+        # Else, find any associated resources.
+        if resource_classes:
+            for resource_class in resource_classes:
+                credit_allocation_resource = (
+                    models.CreditAllocationResource.objects.filter(
+                        allocation=credit_allocation, resource_class=resource_class
+                    ).first()
                 )
-            resource_allocations[resource_class] = credit_allocation_resource
+                if not credit_allocation_resource:
+                    raise db_exceptions.NoCreditAllocation(
+                        f"No credit allocated for resource_type {resource_class}"
+                    )
+                # TODO(tylerchristie): I think this breaks for the case where we have
+                # multiple credit allocations for the same resource_class.
+                resource_allocations[resource_class] = credit_allocation_resource
+        else:
+            credit_allocation_resources = (
+                models.CreditAllocationResource.objects.filter(
+                    allocation=credit_allocation
+                )
+            )
+            for car in credit_allocation_resources:
+                resource_class = models.ResourceClass.objects.filter(
+                    id=car.resource_class
+                ).first()
+                resource_allocations[resource_class] = credit_allocation_resource
+
     return resource_allocations
 
 
