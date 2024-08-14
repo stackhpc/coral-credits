@@ -191,10 +191,11 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
     http://$SITE:$PORT/consumer/)
 
 if [ "$RESPONSE" -eq 204 ]; then
-		exit 0
+		echo "All tests completed."
 	else
 		echo "Error: Expected HTTP status code 204, but got $status"
 		exit 1
 	fi
 
-echo "All tests completed."
+# Scrape prometheus metrics: 
+curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" http://$SITE:$PORT/metrics/
