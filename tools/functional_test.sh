@@ -5,7 +5,7 @@ set -eux
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 PORT=80
-METRICS_PORT=8080
+METRICS_PORT=8000
 SITE=localhost
 # Function to check if port is open
 check_port() {
