@@ -67,6 +67,23 @@ securityContext:
     drop: [ALL]
   readOnlyRootFilesystem: true
 
+# Ingress settings
+ingress:
+  # The hostname to use for the portal
+  host:
+  # The ingress class to use
+  className: nginx
+  # Annotations for the portal ingress
+  annotations: {}
+  # TLS configuration for the portal ingress
+  tls:
+    # Indicates if TLS should be enabled
+    enabled: true
+    # The secret to use for the TLS certificate and key
+    secretName:
+    # TLS-specific ingress annotations, e.g. for cert-manager configuration
+    annotations: {}
+
 # Django settings
 settings:
   # The Django secret key
@@ -105,7 +122,10 @@ replicaCount: 1
 # Service details for the api
 service:
   type: ClusterIP
-  port: 8080
+  api:
+    port: 8080
+  prometheusExporter:
+    port: 8000
 
 # Node selector for pods
 nodeSelector: {}

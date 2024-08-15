@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -eux
+set -eu
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-PORT=8080
+PORT=80
+METRICS_PORT=8000
 SITE=localhost
 # Function to check if port is open
 check_port() {
@@ -12,15 +13,45 @@ check_port() {
 	return $?
 }
 
-# Function to check HTTP status
+# Function to make HTTP request and return status code and content
+get_http_response() {
+    local endpoint="$1"
+    local port="$2"
+    local response=$(curl -s -w "\n%{http_code}" "http://$SITE:$port/$endpoint")
+    echo "$response"
+}
+
+# Function to check HTTP status for _status endpoint
 check_http_status() {
-	local status=$(curl -s -o /dev/null -w "%{http_code}" http://$SITE:$PORT/_status/)
-	if [ "$status" -eq 204 ]; then
-		return 0
-	else
-		echo "Error: Expected HTTP status code 204, but got $status"
-		return 1
-	fi
+    local response=$(get_http_response "_status/" $PORT)
+    local status=$(echo "$response" | tail -n1)
+    local content=$(echo "$response" | sed '$d')
+
+    if [ "$status" -eq 204 ]; then
+        echo "Status check passed. (No content for 204 status)"
+        return 0
+    else
+        echo "Error: Expected HTTP status code 204 for _status, but got $status"
+        [ -n "$content" ] && echo "Response content: $content"
+        return 1
+    fi
+}
+
+# Function to check HTTP status for metrics endpoint
+check_metrics_status() {
+    local response=$(get_http_response "metrics/" $METRICS_PORT)
+    local status=$(echo "$response" | tail -n1)
+    local content=$(echo "$response" | sed '$d')
+
+    if [ "$status" -eq 200 ]; then
+        echo "Metrics retrieved successfully. Content:"
+        echo "$content"
+        return 0
+    else
+        echo "Error: Expected HTTP status code 200 for metrics, but got $status"
+        [ -n "$content" ] && echo "Response content: $content"
+        return 1
+    fi
 }
 
 # Set variables
@@ -28,6 +59,13 @@ CHART_NAME="coral-credits"
 RELEASE_NAME=$CHART_NAME
 NAMESPACE=$CHART_NAME
 TEST_PASSWORD="testpassword"
+
+# Install nginx
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s
 
 # Install the CaaS operator from the chart we are about to ship
 # Make sure to use the images that we just built
@@ -39,12 +77,12 @@ helm upgrade $RELEASE_NAME ./charts \
 	--wait \
 	--timeout 3m \
 	--set-string image.tag=${GITHUB_SHA::7} \
-    --set settings.superuserPassword=$TEST_PASSWORD
+    --set settings.superuserPassword=$TEST_PASSWORD \
+    --set ingress.host=$SITE \
+    --set ingress.tls.enabled=false 
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
-# Port forward in the background
-kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $PORT:$PORT &
 
 # Wait for port to be open
 echo "Waiting for port $PORT to be available..."
@@ -175,10 +213,11 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             \"start_date\": \"$START_DATE\",
             \"end_date\": \"$END_DATE\",
             \"reservations\": [
-                {
-                    \"resource_type\": \"physical:host\",
-                    \"min\": 1,
-                    \"max\": 3
+                {   \"amount\": \"2\",
+                    \"flavor_id\": \"e26a4241-b83d-4516-8e0e-8ce2665d1966\", 
+                    \"resource_type\": \"flavor:instance\",
+                    \"affinity\" : \"None\",
+                    \"allocations\": []
                 }
             ],
             \"resource_requests\": {
@@ -191,10 +230,43 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
     http://$SITE:$PORT/consumer/)
 
 if [ "$RESPONSE" -eq 204 ]; then
-		exit 0
+		echo "All tests completed."
 	else
-		echo "Error: Expected HTTP status code 204, but got $status"
+		echo "Error: Expected HTTP status code 204, but got $RESPONSE"
 		exit 1
 	fi
 
-echo "All tests completed."
+# Scrape prometheus metrics: 
+kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $METRICS_PORT:$METRICS_PORT &
+# Wait for port to be open
+echo "Waiting for port $METRICS_PORT to be available..."
+for i in {1..30}; do
+	if check_port; then
+		echo "Port $METRICS_PORT is now open"
+		break
+	fi
+	if [ $i -eq 30 ]; then
+		echo "Timeout waiting for port $METRICS_PORT"
+		exit 1
+	fi
+	sleep 1
+done
+
+# Check metrics status with retries
+echo "Checking Prometheus status..."
+for i in {1..10}; do
+	if check_metrics_status; then
+		echo "Success: HTTP status code is 200."
+		break
+	fi
+	if [ $i -eq 10 ]; then
+		echo "Failed to get correct HTTP status after 10 attempts"
+		# Get pod logs on failure
+		SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"
+		POD_NAME=$(kubectl get pods -n $NAMESPACE -l $SELECTOR -o jsonpath="{.items[0].metadata.name}")
+		kubectl logs -n $NAMESPACE $POD_NAME
+		exit 1
+	fi
+	echo "Attempt $i failed. Retrying in 3 seconds..."
+	sleep 3
+done

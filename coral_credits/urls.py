@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from rest_framework.authtoken import views as drfviews
 from rest_framework_nested import routers
 
@@ -39,6 +40,10 @@ allocation_router.register(
 )
 
 
+def prometheus_metrics(request):
+    return HttpResponse(generate_latest(), content_type=CONTENT_TYPE_LATEST)
+
+
 def status(request):
     # Just return 204 No Content
     return HttpResponse(status=204)
@@ -47,6 +52,7 @@ def status(request):
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
+    path("metrics/", prometheus_metrics, name="prometheus-metrics"),
     path("_status/", status, name="status"),
     path("", include(router.urls)),
     path("", include(allocation_router.urls)),

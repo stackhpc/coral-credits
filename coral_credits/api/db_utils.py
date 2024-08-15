@@ -1,7 +1,11 @@
+import logging
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from coral_credits.api import db_exceptions, models
+
+LOG = logging.getLogger(__name__)
 
 
 def get_current_lease(current_lease):
@@ -21,6 +25,38 @@ def get_resource_provider_account(project_id):
     return resource_provider_account
 
 
+def get_all_resource_provider_account():
+    resource_provider_accounts = models.ResourceProviderAccount.objects.all()
+    return resource_provider_accounts
+
+
+def get_all_active_reservations(resource_provider_account):
+    """Get all active reservation resources for an account:
+
+    Returns a list of dictionaries of the form:
+    [
+        {"resource_class": "resource_hours"},
+        {"resource_class": "resource_hours"},
+        ...
+    ]
+    """
+    # TODO(tylerchristie): can probably refactor the credit check with this function.
+    resources = {}
+    consumers = models.Consumer.objects.filter(
+        resource_provider_account=resource_provider_account
+    )
+    for c in consumers:
+        resource_consumption_records = models.ResourceConsumptionRecord.objects.filter(
+            consumer=c
+        )
+        for rcr in resource_consumption_records:
+            if rcr.resource_class in resources:
+                resources[rcr.resource_class] += rcr.resource_hours
+            else:
+                resources[rcr.resource_class] = rcr.resource_hours
+    return resources
+
+
 def get_credit_allocation(id):
     now = timezone.now()
     try:
@@ -38,7 +74,7 @@ def get_all_credit_allocations(resource_provider_account):
     now = timezone.now()
     credit_allocations = models.CreditAllocation.objects.filter(
         account=resource_provider_account.account, start__lte=now, end__gte=now
-    ).order_by("-start")
+    ).order_by("pk")
 
     return credit_allocations
 
@@ -50,17 +86,34 @@ def get_credit_allocation_resources(credit_allocations, resource_classes):
         "resource_class": "credit_resource_allocation"
     }
     """
+    credit_allocation_resources = get_all_credit_allocation_resources(
+        credit_allocations
+    )
+    for resource_class in resource_classes:
+        if resource_class not in credit_allocation_resources:
+            raise db_exceptions.NoCreditAllocation(
+                f"No credit allocated for resource_type {resource_class}"
+            )
+    return credit_allocation_resources
+
+
+def get_all_credit_allocation_resources(credit_allocations):
+    """Returns a dictionary of the form:
+
+    {
+        "resource_class": "credit_resource_allocation"
+    }
+    """
     resource_allocations = {}
     for credit_allocation in credit_allocations:
-        for resource_class in resource_classes:
-            credit_allocation_resource = models.CreditAllocationResource.objects.filter(
-                allocation=credit_allocation, resource_class=resource_class
-            ).first()
-            if not credit_allocation_resource:
-                raise db_exceptions.NoCreditAllocation(
-                    f"No credit allocated for resource_type {resource_class}"
-                )
-            resource_allocations[resource_class] = credit_allocation_resource
+        credit_allocation_resources = models.CreditAllocationResource.objects.filter(
+            allocation=credit_allocation
+        )
+        # TODO(tylerchristie): I think this breaks for the case where we have
+        # multiple credit allocations for the same resource_class.
+        for car in credit_allocation_resources:
+            resource_allocations[car.resource_class] = car
+
     return resource_allocations
 
 
@@ -129,6 +182,12 @@ def get_resource_requests(lease, current_resource_requests=None):
                 )
             else:
                 delta_resource_hours = requested_resource_hours
+
+            LOG.info(
+                f"Calculated {delta_resource_hours} hours for lease {lease.id} with "
+                f"requests {{resource_class: {resource_class}, amount: {amount}, "
+                f"duration: {lease.duration}}}"
+            )
 
             resource_requests[resource_class] = delta_resource_hours
 

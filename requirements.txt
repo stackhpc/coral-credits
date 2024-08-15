@@ -1,5 +1,5 @@
 django-auditlog==3.0.0
-Django==5.0.6
+Django==5.0.8
 django-flexi-settings @ git+https://github.com/stackhpc/django-flexi-settings.git@079359cc1e2d380a15ae6149ebffbcdae8094276
 django-settings-object @ git+https://github.com/cedadev/django-settings-object.git@2b66c0fc5eae92972df5210b4bc43f7d95ad9ceb
 djangorestframework==3.15.2
@@ -7,4 +7,5 @@ drf-nested-routers==0.94.1
 django-extensions==3.2.3
 drf-spectacular==0.27.2
 gunicorn==22.0.0
+prometheus_client==0.20.0
 tzdata==2024.1
