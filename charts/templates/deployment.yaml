@@ -50,15 +50,13 @@ spec:
               mountPath: /etc/coral-credits/settings.d
               readOnly: true
         - name: prometheus-exporter
-          securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           restartPolicy: Always
           env:
-          - name: GUNICORN_PORT 
-            value: {{ .Values.service.api.port }}
-          - name: RUN_PROM 
-            value: "true"
+            - name: GUNICORN_PORT 
+              value: {{ print .Values.service.api.port }}
+            - name: RUN_PROM 
+              value: "true"
           ports:
             - name: metrics
               containerPort: {{ .Values.service.prometheusExporter.port }}
@@ -77,7 +75,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
           - name: GUNICORN_PORT 
-            value: {{ .Values.service.api.port }}
+            value: {{ print .Values.service.api.port }}
           ports:
             - name: http
               containerPort: {{ .Values.service.api.port }}
