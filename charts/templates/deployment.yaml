@@ -54,7 +54,7 @@ spec:
           restartPolicy: Always
           env:
             - name: GUNICORN_PORT 
-              value: {{ print .Values.service.api.port }}
+              value: {{ .Values.service.api.port | quote }}
             - name: RUN_PROM 
               value: "true"
           ports:
@@ -75,7 +75,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
           - name: GUNICORN_PORT 
-            value: {{ print .Values.service.api.port }}
+            value: {{ .Values.service.api.port | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.api.port }}
