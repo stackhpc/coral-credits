@@ -78,7 +78,6 @@ spec:
               mountPath: /tmp
         - name: prometheus-exporter
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
-          restartPolicy: Always
           env:
             - name: GUNICORN_PORT 
               value: {{ .Values.service.api.port | quote }}
