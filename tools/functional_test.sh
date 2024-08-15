@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -eu
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
@@ -16,13 +16,14 @@ check_port() {
 # Function to make HTTP request and return status code and content
 get_http_response() {
     local endpoint="$1"
-    local response=$(curl -s -w "\n%{http_code}" "http://$SITE/$endpoint")
+    local port="$2"
+    local response=$(curl -s -w "\n%{http_code}" "http://$SITE:$port/$endpoint")
     echo "$response"
 }
 
 # Function to check HTTP status for _status endpoint
 check_http_status() {
-    local response=$(get_http_response "_status/")
+    local response=$(get_http_response "_status/" $PORT)
     local status=$(echo "$response" | tail -n1)
     local content=$(echo "$response" | sed '$d')
 
@@ -38,7 +39,7 @@ check_http_status() {
 
 # Function to check HTTP status for metrics endpoint
 check_metrics_status() {
-    local response=$(get_http_response "metrics/")
+    local response=$(get_http_response "metrics/" $METRICS_PORT)
     local status=$(echo "$response" | tail -n1)
     local content=$(echo "$response" | sed '$d')
 
