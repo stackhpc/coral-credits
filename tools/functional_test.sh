@@ -13,15 +13,32 @@ check_port() {
 	return $?
 }
 
-# Function to check HTTP status
+# Function to make HTTP request and return status code
+get_http_status() {
+    local endpoint="$1"
+    curl -s -o /dev/null -w "%{http_code}" "http://$SITE/$endpoint"
+}
+
+# Function to check HTTP status for _status endpoint
 check_http_status() {
-	local status=$(curl -s -o /dev/null -w "%{http_code}" http://$SITE/_status/)
-	if [ "$status" -eq 204 ]; then
-		return 0
-	else
-		echo "Error: Expected HTTP status code 204, but got $status"
-		return 1
-	fi
+    local status=$(get_http_status "_status/")
+    if [ "$status" -eq 204 ]; then
+        return 0
+    else
+        echo "Error: Expected HTTP status code 204 for _status, but got $status"
+        return 1
+    fi
+}
+
+# Function to check HTTP status for metrics endpoint
+check_metrics_status() {
+    local status=$(get_http_status "metrics/")
+    if [ "$status" -eq 200 ]; then
+        return 0
+    else
+        echo "Error: Expected HTTP status code 200 for metrics, but got $status"
+        return 1
+    fi
 }
 
 # Set variables
@@ -221,9 +238,22 @@ for i in {1..30}; do
 	fi
 	sleep 1
 done
-curl -s http://$SITE:$METRICS_PORT/metrics/
 
-# Pod logs
-SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"
-POD_NAME=$(kubectl get pods -n $NAMESPACE -l $SELECTOR -o jsonpath="{.items[0].metadata.name}")
-kubectl logs -n $NAMESPACE $POD_NAME
+# Check metrics status with retries
+echo "Checking Prometheus status..."
+for i in {1..10}; do
+	if check_metrics_status; then
+		echo "Success: HTTP status code is 200."
+		break
+	fi
+	if [ $i -eq 10 ]; then
+		echo "Failed to get correct HTTP status after 10 attempts"
+		# Get pod logs on failure
+		SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"
+		POD_NAME=$(kubectl get pods -n $NAMESPACE -l $SELECTOR -o jsonpath="{.items[0].metadata.name}")
+		kubectl logs -n $NAMESPACE $POD_NAME
+		exit 1
+	fi
+	echo "Attempt $i failed. Retrying in 3 seconds..."
+	sleep 3
+done
