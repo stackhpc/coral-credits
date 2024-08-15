@@ -80,7 +80,7 @@ spec:
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
           env:
             - name: GUNICORN_PORT 
-              value: {{ .Values.service.api.port | quote }}
+              value: {{ .Values.service.prometheusExporter.port | quote }}
             - name: RUN_PROM 
               value: "true"
           ports:
