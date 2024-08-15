@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -8,13 +9,24 @@ from coral_credits.api import db_exceptions, models
 LOG = logging.getLogger(__name__)
 
 
-def get_current_lease(current_lease):
-    current_consumer = get_object_or_404(
-        models.Consumer, consumer_uuid=current_lease.id
-    )
-    current_resource_requests = models.CreditAllocationResource.objects.filter(
-        consumer=current_consumer,
-    )
+def get_current_lease(current_lease_required, context, current_lease):
+    if current_lease_required:
+        current_consumer = get_object_or_404(
+            models.Consumer, consumer_uuid=current_lease.id
+        )
+        current_resource_requests = models.ResourceConsumptionRecord.objects.filter(
+            consumer=current_consumer
+        )
+        LOG.info(
+            f"User {context.user_id} requested an update to lease "
+            f"{current_lease.id}."
+        )
+        LOG.info(f"Current lease resource requests: {current_resource_requests}")
+
+    else:
+        current_consumer = None
+        current_resource_requests = None
+
     return current_consumer, current_resource_requests
 
 
@@ -75,6 +87,9 @@ def get_all_credit_allocations(resource_provider_account):
     credit_allocations = models.CreditAllocation.objects.filter(
         account=resource_provider_account.account, start__lte=now, end__gte=now
     ).order_by("pk")
+
+    if not credit_allocations.exists():
+        raise models.CreditAllocation.DoesNotExist
 
     return credit_allocations
 
@@ -158,7 +173,6 @@ def get_resource_requests(lease, current_resource_requests=None):
     }
     """
     resource_requests = {}
-
     for (
         resource_type,
         amount,
@@ -174,6 +188,15 @@ def get_resource_requests(lease, current_resource_requests=None):
                 float(amount) * lease.duration,
                 1,
             )
+            LOG.info(
+                f"for {resource_class} - current: {current_resource_requests}, "
+                f"new: {requested_resource_hours}"
+            )
+            if (not current_resource_requests) and requested_resource_hours <= 0:
+                raise db_exceptions.ResourceRequestFormatError(
+                    f"Invalid request: {requested_resource_hours} hours requested for "
+                    f"{resource_class}."
+                )
             if current_resource_requests:
                 delta_resource_hours = calculate_delta_resource_hours(
                     requested_resource_hours,
@@ -207,8 +230,7 @@ def calculate_delta_resource_hours(
         resource_class=resource_class
     ).first()
     if current_resource_request:
-        current_resource_hours = current_resource_request.resource_hours
-        return requested_resource_hours - current_resource_hours
+        return requested_resource_hours - current_resource_request.resource_hours
     # Case: user requests a new resource
     return requested_resource_hours
 
@@ -255,12 +277,19 @@ def check_credit_balance(credit_allocations, resource_requests):
 
 
 def spend_credits(
-    lease, resource_provider_account, context, resource_requests, credit_allocations
+    lease,
+    resource_provider_account,
+    context,
+    resource_requests,
+    credit_allocations,
+    current_consumer,
+    current_resource_requests,
 ):
-
+    # We use a temporary UUID to avoid integrity errors
+    # Whilst we create the new ResourceConsumptionRecords.
     consumer = models.Consumer.objects.create(
         consumer_ref=lease.name,
-        consumer_uuid=lease.id,
+        consumer_uuid=uuid.uuid4(),
         resource_provider_account=resource_provider_account,
         user_ref=context.user_id,
         start=lease.start_date,
@@ -268,17 +297,35 @@ def spend_credits(
     )
 
     for resource_class in resource_requests:
+        if current_resource_requests:
+            current_resource_hours = (
+                current_resource_requests.filter(resource_class=resource_class)
+                .first()
+                .resource_hours
+            )
+        else:
+            current_resource_hours = 0
+
         models.ResourceConsumptionRecord.objects.create(
             consumer=consumer,
             resource_class=resource_class,
-            resource_hours=resource_requests[resource_class],
+            resource_hours=current_resource_hours + resource_requests[resource_class],
         )
         # Subtract expenditure from CreditAllocationResource
+        # Or add, if the update delta is < 0
         credit_allocations[resource_class].resource_hours = (
             credit_allocations[resource_class].resource_hours
             - resource_requests[resource_class]
         )
         credit_allocations[resource_class].save()
+
+    if current_consumer:
+        # We have CASCADE behaviour for ResourceConsumptionRecords
+        # Also we roll back all db transactions if the final check fails
+        current_consumer.delete()
+    # Now we set the real ID
+    consumer.consumer_uuid = lease.id
+    consumer.save()
 
 
 def create_credit_resource_allocations(credit_allocation, resource_allocations):
