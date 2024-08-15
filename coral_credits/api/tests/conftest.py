@@ -1,5 +1,7 @@
+import copy
 from datetime import datetime, timedelta
 
+from django.apps import apps
 from django.contrib.auth.models import User
 from django.utils.timezone import make_aware
 import pytest
@@ -10,10 +12,14 @@ import coral_credits.api.models as models
 
 
 def pytest_configure(config):
+    config.LEASE_NAME = "my_new_lease"
+    config.LEASE_ID = "e96b5a17-ada0-4034-a5ea-34db024b8e04"
     config.PROJECT_ID = "20354d7a-e4fe-47af-8ff6-187bca92f3f9"
     config.USER_REF = "caa8b54a-eb5e-4134-8ae2-a3946a428ec7"
     config.START_DATE = make_aware(datetime.now())
     config.END_DATE = config.START_DATE + timedelta(days=1)
+    config.END_EARLY_DATE = config.START_DATE + timedelta(days=0.75)
+    config.END_LATE_DATE = config.START_DATE + timedelta(days=1.5)
 
 
 # Get auth token
@@ -80,21 +86,46 @@ def create_credit_allocation_resources():
         vcpu_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=vcpu,
-            resource_hours=allocation_hours["vcpu"],
+            resource_hours=allocation_hours["VCPU"],
         )
         memory_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=memory,
-            resource_hours=allocation_hours["memory"],
+            resource_hours=allocation_hours["MEMORY_MB"],
         )
         disk_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=disk,
-            resource_hours=allocation_hours["disk"],
+            resource_hours=allocation_hours["DISK_GB"],
         )
         return (vcpu_allocation, memory_allocation, disk_allocation)
 
     return _create_credit_allocation_resources
+
+
+#####
+# POST-TEST
+#####
+
+
+@pytest.fixture(autouse=True)
+def print_db_state():
+    """We output the state of the database after a test."""
+    # pre-test:
+    yield  # this is where the testing happens
+
+    # post-test:
+    print("\n----- Database State -----")
+
+    # Get all models from your app
+    app_models = apps.get_app_config("api").get_models()
+
+    for model in app_models:
+        print(f"\n{model.__name__}:")
+        for instance in model.objects.all():
+            print(f"  - {instance}")
+
+    print("\n--------------------------")
 
 
 #####
@@ -112,8 +143,8 @@ def base_request_data(request):
             "region_name": "RegionOne",
         },
         "lease": {
-            # "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
-            "name": "my_new_lease",
+            "id": request.config.LEASE_ID,
+            "name": request.config.LEASE_NAME,
             "start_date": request.config.START_DATE.isoformat(),
             "end_date": request.config.END_DATE.isoformat(),
             "before_end_date": None,
@@ -146,15 +177,46 @@ def flavor_request_data(base_request_data):
 
 
 @pytest.fixture
-def flavor_delete_current_request_data(flavor_request_data):
-    delete_request_data = {"lease": {"end_date": datetime.now().isoformat()}}
+def flavor_extend_current_request_data(flavor_request_data, request):
+    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
+    delete_request_data["lease"] = {
+        "end_date": request.config.END_LATE_DATE.isoformat()
+    }
+    return deep_merge(flavor_request_data, delete_request_data)
+
+
+@pytest.fixture
+def flavor_delete_current_request_data(flavor_request_data, request):
+    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
+    delete_request_data["lease"] = {
+        "end_date": request.config.END_EARLY_DATE.isoformat()
+    }
     return deep_merge(flavor_request_data, delete_request_data)
 
 
 @pytest.fixture
 def flavor_delete_upcoming_request_data(flavor_request_data, request):
-    delete_request_data = {"lease": {"end_date": request.config.START_DATE.isoformat()}}
+    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
+    delete_request_data["lease"] = {"end_date": request.config.START_DATE.isoformat()}
     return deep_merge(flavor_request_data, delete_request_data)
+
+
+@pytest.fixture
+def zero_hours_request_data(flavor_request_data, request):
+    zero_hours_request_data = {
+        "lease": {"end_date": request.config.START_DATE.isoformat()}
+    }
+    return deep_merge(flavor_request_data, zero_hours_request_data)
+
+
+@pytest.fixture
+def negative_hours_request_data(flavor_request_data, request):
+    zero_hours_request_data = {
+        "lease": {
+            "end_date": (request.config.START_DATE - timedelta(days=1)).isoformat()
+        }
+    }
+    return deep_merge(flavor_request_data, zero_hours_request_data)
 
 
 @pytest.fixture

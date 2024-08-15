@@ -11,11 +11,46 @@ import coral_credits.api.models as models
 # TODO(tylerchristie): check and commit tests
 
 
+def consumer_request(url, api_client, request_data, expected_response):
+    response = api_client.post(
+        url,
+        data=json.dumps(request_data),
+        content_type="application/json",
+        secure=True,
+    )
+
+    assert response.status_code == expected_response, (
+        f"Expected {expected_response}. "
+        f"Actual status {response.status_code}. "
+        f"Response text {response.content}"
+    )
+
+    return response
+
+
+def consumer_create_request(api_client, request_data, expected_response):
+    return consumer_request(
+        reverse("resource-request-create-consumer"),
+        api_client,
+        request_data,
+        expected_response,
+    )
+
+
+def consumer_update_request(api_client, request_data, expected_response):
+    return consumer_request(
+        reverse("resource-request-update-consumer"),
+        api_client,
+        request_data,
+        expected_response,
+    )
+
+
 @pytest.mark.parametrize(
     "allocation_hours,request_data",
     [
         (
-            {"vcpu": 96.0, "memory": 24000.0, "disk": 840.0},
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
             lazy_fixture("flavor_request_data"),
         ),
     ],
@@ -31,67 +66,208 @@ def test_flavor_create_request(
     allocation_hours,
     request,  # contains pytest global vars
 ):
-    START_DATE = request.config.START_DATE
-    END_DATE = request.config.END_DATE
-    USER_REF = request.config.USER_REF
-
-    credit_allocation_resources = create_credit_allocation_resources(
+    # Allocate resource credit
+    create_credit_allocation_resources(
         credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resource-request-list")
-    response = api_client.post(
-        url,
-        data=json.dumps(request_data),
-        content_type="application/json",
-        secure=True,
-    )
+    # Create
+    consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT, (
-        f"Expected {status.HTTP_204_NO_CONTENT}. "
-        f"Actual status {response.status_code}. "
-        f"Response text {response.content}"
-    )
-
-    new_consumer = models.Consumer.objects.filter(consumer_ref="my_new_lease").first()
+    # Find consumer and assert fields are correct
+    new_consumer = models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).first()
     assert new_consumer is not None
     assert new_consumer.resource_provider_account == resource_provider_account
-    assert new_consumer.user_ref == uuid.UUID(USER_REF)
-    assert new_consumer.start == START_DATE
-    assert new_consumer.end == END_DATE
+    assert new_consumer.user_ref == uuid.UUID(request.config.USER_REF)
+    assert new_consumer.start == request.config.START_DATE
+    assert new_consumer.end == request.config.END_DATE
 
+    # Check credit has been subtracted
     for c in models.CreditAllocationResource.objects.all():
         assert (
             c.resource_hours == 0
         ), f"CreditAllocationResource for {c.resource_class.name} is not depleted"
 
-    vcpu, memory, disk = resource_classes
-    rcr_vcpu = models.ResourceConsumptionRecord.objects.get(
-        consumer=new_consumer, resource_class=vcpu
-    )
-    assert rcr_vcpu.resource_hours == 96.0
+    # Check consumption records are correct
+    for resource_class in resource_classes:
+        rcr = models.ResourceConsumptionRecord.objects.get(
+            consumer=new_consumer, resource_class=resource_class.id
+        )
+        assert rcr.resource_hours == allocation_hours[resource_class.name]
 
-    rcr_memory = models.ResourceConsumptionRecord.objects.get(
-        consumer=new_consumer, resource_class=memory
-    )
-    assert rcr_memory.resource_hours == 24000.0
 
-    rcr_disk = models.ResourceConsumptionRecord.objects.get(
-        consumer=new_consumer, resource_class=disk
+@pytest.mark.parametrize(
+    "allocation_hours,request_data,delete_request_data",
+    [
+        (
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
+            lazy_fixture("flavor_request_data"),
+            lazy_fixture("flavor_delete_upcoming_request_data"),
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_flavor_delete_upcoming_request(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    request_data,
+    delete_request_data,
+    allocation_hours,
+    request,  # contains pytest global vars
+):
+    # Allocate resource credit
+    create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
     )
-    assert rcr_disk.resource_hours == 840.0
 
-    vcpu_allocation, memory_allocation, disk_allocation = credit_allocation_resources
-    assert vcpu_allocation.resource_hours == rcr_vcpu.resource_hours
-    assert memory_allocation.resource_hours == rcr_memory.resource_hours
-    assert disk_allocation.resource_hours == rcr_disk.resource_hours
+    # Create
+    consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
+
+    # Delete
+    consumer_update_request(api_client, delete_request_data, status.HTTP_204_NO_CONTENT)
+
+    # Find consumer and check duration is 0.
+    new_consumer = models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).first()
+    assert new_consumer is not None
+    assert new_consumer.end == request.config.START_DATE
+
+    # Check our original allocations are intact.
+    for resource_class in resource_classes:
+        c = models.CreditAllocationResource.objects.filter(
+            resource_class=resource_class.id
+        ).first()
+        assert c.resource_hours == allocation_hours[resource_class.name], (
+            f"CreditAllocationResource for {c.resource_class.name} has changed, "
+            f"new amount: {c.resource_hours}"
+        )
+
+
+@pytest.mark.parametrize(
+    "allocation_hours,request_data,delete_request_data",
+    [
+        (
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
+            lazy_fixture("flavor_request_data"),
+            lazy_fixture("flavor_delete_current_request_data"),
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_flavor_delete_currently_active_request(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    request_data,
+    delete_request_data,
+    allocation_hours,
+    request,  # contains pytest global vars
+):
+    # Allocate resource credit
+    create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
+    )
+
+    # Create
+    consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
+
+    # Delete
+    consumer_update_request(api_client, delete_request_data, status.HTTP_204_NO_CONTENT)
+
+    # Find consumer and check end date is changed.
+    new_consumer = models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).first()
+    assert new_consumer is not None
+    assert new_consumer.end == request.config.END_EARLY_DATE
+
+    # END_EARLY_DATE is 3/4 the duration of the original allocation.
+
+    # Check our allocations are correct.
+    for resource_class in resource_classes:
+        c = models.CreditAllocationResource.objects.filter(
+            resource_class=resource_class.id
+        ).first()
+        assert c.resource_hours == allocation_hours[resource_class.name] * 0.25
+
+    # Check consumption records are correct
+    for resource_class in resource_classes:
+        rcr = models.ResourceConsumptionRecord.objects.get(
+            consumer=new_consumer, resource_class=resource_class.id
+        )
+        assert rcr.resource_hours == allocation_hours[resource_class.name] * 0.75
+
+
+@pytest.mark.parametrize(
+    "allocation_hours,request_data,delete_request_data",
+    [
+        (
+            {"VCPU": 144, "MEMORY_MB": 36000.0, "DISK_GB": 1260.0},
+            lazy_fixture("flavor_request_data"),
+            lazy_fixture("flavor_extend_current_request_data"),
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_flavor_extend_currently_active_request(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    request_data,
+    delete_request_data,
+    allocation_hours,
+    request,  # contains pytest global vars
+):
+    # Allocate resource credit
+    create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
+    )
+
+    # Create
+    consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
+
+    # Extend
+    consumer_update_request(api_client, delete_request_data, status.HTTP_204_NO_CONTENT)
+
+    # Find consumer and check end date is changed.
+    new_consumer = models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).first()
+    assert new_consumer is not None
+    assert new_consumer.end == request.config.END_LATE_DATE
+
+    # END_LATE_DATE is 1.5x the duration of the original allocation.
+
+    # Check our allocations are correct.
+    for resource_class in resource_classes:
+        c = models.CreditAllocationResource.objects.filter(
+            resource_class=resource_class.id
+        ).first()
+        assert c.resource_hours == 0
+
+    # Check consumption records are correct
+    for resource_class in resource_classes:
+        rcr = models.ResourceConsumptionRecord.objects.get(
+            consumer=new_consumer, resource_class=resource_class.id
+        )
+        assert rcr.resource_hours == allocation_hours[resource_class.name]
 
 
 @pytest.mark.parametrize(
     "allocation_hours, request_data",
     [
         (
-            {"vcpu": 10.0, "memory": 1000.0, "disk": 100.0},
+            {"VCPU": 10.0, "MEMORY_MB": 1000.0, "DISK_GB": 100.0},
             lazy_fixture("flavor_request_data"),
         ),
     ],
@@ -111,19 +287,7 @@ def test_insufficient_credits_create_request(
         credit_allocation, resource_classes, allocation_hours
     )
 
-    url = reverse("resource-request-list")
-    response = api_client.post(
-        url,
-        data=json.dumps(request_data),
-        content_type="application/json",
-        secure=True,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN, (
-        f"Expected {status.HTTP_403_FORBIDDEN}. "
-        f"Actual status {response.status_code}. "
-        f"Response text {response.content}"
-    )
+    consumer_create_request(api_client, request_data, status.HTTP_403_FORBIDDEN)
 
     # TODO(tylerchristie): assert that allocations have their original values
     assert not models.Consumer.objects.filter(consumer_ref="my_new_lease").exists()
@@ -146,16 +310,38 @@ def test_invalid_blazar_resource_type_create_request(
     api_client,
     request_data,
 ):
-    url = reverse("resource-request-list")
-    response = api_client.post(
-        url,
-        data=json.dumps(request_data),
-        content_type="application/json",
-        secure=True,
+    consumer_create_request(api_client, request_data, status.HTTP_400_BAD_REQUEST)
+
+
+@pytest.mark.parametrize(
+    "allocation_hours,request_data",
+    [
+        (
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
+            lazy_fixture("zero_hours_request_data"),
+        ),
+        (
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
+            lazy_fixture("negative_hours_request_data"),
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_invalid_duration_create_request(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    request_data,
+    allocation_hours,
+):
+    create_credit_allocation_resources(
+        credit_allocation, resource_classes, allocation_hours
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST, (
-        f"Expected {status.HTTP_400_BAD_REQUEST}. "
-        f"Actual status {response.status_code}. "
-        f"Response text {response.content}"
+    response = consumer_create_request(
+        api_client, request_data, status.HTTP_403_FORBIDDEN
     )
+
+    print(response.content)
