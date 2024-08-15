@@ -13,8 +13,8 @@ check_port() {
 	return $?
 }
 
-# Function to make HTTP request and return status code
-get_http_status() {
+# Function to make HTTP request and return status code and content
+get_http_response() {
     local endpoint="$1"
     local response=$(curl -s -w "\n%{http_code}" "http://$SITE/$endpoint")
     echo "$response"
@@ -22,11 +22,16 @@ get_http_status() {
 
 # Function to check HTTP status for _status endpoint
 check_http_status() {
-    local status=$(get_http_status "_status/")
+    local response=$(get_http_response "_status/")
+    local status=$(echo "$response" | tail -n1)
+    local content=$(echo "$response" | sed '$d')
+
     if [ "$status" -eq 204 ]; then
+        echo "Status check passed. (No content for 204 status)"
         return 0
     else
         echo "Error: Expected HTTP status code 204 for _status, but got $status"
+        [ -n "$content" ] && echo "Response content: $content"
         return 1
     fi
 }
@@ -43,6 +48,7 @@ check_metrics_status() {
         return 0
     else
         echo "Error: Expected HTTP status code 200 for metrics, but got $status"
+        [ -n "$content" ] && echo "Response content: $content"
         return 1
     fi
 }
