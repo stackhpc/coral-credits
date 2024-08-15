@@ -17,6 +17,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref || github.ref }}
           # This is important for the semver action to work correctly
           # when determining the number of commits since the last tag
           fetch-depth: 0
