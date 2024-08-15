@@ -5,6 +5,7 @@ set -eux
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 PORT=80
+METRICS_PORT=8080
 SITE=localhost
 # Function to check if port is open
 check_port() {
@@ -206,7 +207,8 @@ if [ "$RESPONSE" -eq 204 ]; then
 	fi
 
 # Scrape prometheus metrics: 
-curl -s http://$SITE:$PORT/metrics/
+kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $METRICS_PORT:$METRICS_PORT &
+curl -s http://$SITE:$METRICS_PORT/metrics/
 
 # Pod logs
 SELECTOR="app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$RELEASE_NAME"

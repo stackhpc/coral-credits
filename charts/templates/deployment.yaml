@@ -49,17 +49,35 @@ spec:
             - name: runtime-settings
               mountPath: /etc/coral-credits/settings.d
               readOnly: true
+        - name: prometheus-exporter
+          securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          restartPolicy: Always
+          env:
+            GUNICORN_PORT: {{ .Values.service.prometheusExporter.port }}
+            RUN_PROM: "true"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.service.prometheusExporter.port }}
+              protocol: TCP
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
       containers:
         - name: api
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          #env:
-            # TODO(tylerchristie): inject stuff here
-          # TODO(tylerchristie): need metrics at some point
+          env:
+            GUNICORN_PORT: {{ .Values.service.api.port }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.api.port }}
               protocol: TCP
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}

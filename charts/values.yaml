@@ -122,7 +122,10 @@ replicaCount: 1
 # Service details for the api
 service:
   type: ClusterIP
-  port: 8080
+  api:
+    port: 8080
+  prometheusExporter:
+    port: 8000
 
 # Node selector for pods
 nodeSelector: {}

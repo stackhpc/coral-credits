@@ -7,7 +7,7 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - name: http
-      port: {{ .Values.service.port }}
+      port: {{ .Values.service.api.port }}
       targetPort: http
       protocol: TCP
     # TODO(tylerchristie): expose monitoring
