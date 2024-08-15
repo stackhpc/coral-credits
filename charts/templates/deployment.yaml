@@ -49,25 +49,6 @@ spec:
             - name: runtime-settings
               mountPath: /etc/coral-credits/settings.d
               readOnly: true
-        - name: prometheus-exporter
-          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
-          restartPolicy: Always
-          env:
-            - name: GUNICORN_PORT 
-              value: {{ .Values.service.api.port | quote }}
-            - name: RUN_PROM 
-              value: "true"
-          ports:
-            - name: metrics
-              containerPort: {{ .Values.service.prometheusExporter.port }}
-              protocol: TCP
-          resources: {{ toYaml .Values.resources | nindent 12 }}
-          volumeMounts:
-            - name: data
-              mountPath: /data
-            - name: runtime-settings
-              mountPath: /etc/coral-credits/settings.d
-              readOnly: true
       containers:
         - name: api
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
@@ -95,6 +76,25 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+        - name: prometheus-exporter
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          restartPolicy: Always
+          env:
+            - name: GUNICORN_PORT 
+              value: {{ .Values.service.api.port | quote }}
+            - name: RUN_PROM 
+              value: "true"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.service.prometheusExporter.port }}
+              protocol: TCP
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector: {{ toYaml . | nindent 8 }}
       {{- end }}
