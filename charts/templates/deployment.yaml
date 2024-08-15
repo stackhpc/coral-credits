@@ -41,7 +41,7 @@ spec:
           args:
             - -c
             - >- 
-                python /coral-credits/manage.py migrate &&
+                python /coral-credits/manage.py migrate --run-syncdb &&
                 python /coral-credits/manage.py createsuperuser --no-input || echo $?
           volumeMounts:
             - name: data
@@ -54,12 +54,12 @@ spec:
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          #env:
-            # TODO(tylerchristie): inject stuff here
-          # TODO(tylerchristie): need metrics at some point
+          env:
+          - name: GUNICORN_PORT 
+            value: {{ .Values.service.api.port | quote }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.api.port }}
               protocol: TCP
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
@@ -76,6 +76,24 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+        - name: prometheus-exporter
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          env:
+            - name: GUNICORN_PORT 
+              value: {{ .Values.service.prometheusExporter.port | quote }}
+            - name: RUN_PROM 
+              value: "true"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.service.prometheusExporter.port }}
+              protocol: TCP
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector: {{ toYaml . | nindent 8 }}
       {{- end }}
