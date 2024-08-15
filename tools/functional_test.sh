@@ -208,6 +208,19 @@ if [ "$RESPONSE" -eq 204 ]; then
 
 # Scrape prometheus metrics: 
 kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $METRICS_PORT:$METRICS_PORT &
+# Wait for port to be open
+echo "Waiting for port $METRICS_PORT to be available..."
+for i in {1..30}; do
+	if check_port; then
+		echo "Port $METRICS_PORT is now open"
+		break
+	fi
+	if [ $i -eq 30 ]; then
+		echo "Timeout waiting for port $METRICS_PORT"
+		exit 1
+	fi
+	sleep 1
+done
 curl -s http://$SITE:$METRICS_PORT/metrics/
 
 # Pod logs
