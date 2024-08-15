@@ -58,7 +58,7 @@ spec:
           - name: GUNICORN_PORT 
             value: {{ .Values.service.api.port }}
           - name: RUN_PROM 
-            value: true
+            value: "true"
           ports:
             - name: metrics
               containerPort: {{ .Values.service.prometheusExporter.port }}
