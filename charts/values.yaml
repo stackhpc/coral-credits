@@ -127,6 +127,10 @@ service:
   prometheusExporter:
     port: 8000
 
+# Monitoring
+monitoring:
+  enabled: true
+  
 # Node selector for pods
 nodeSelector: {}
 
