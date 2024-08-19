@@ -79,7 +79,8 @@ helm upgrade $RELEASE_NAME ./charts \
 	--set-string image.tag=${GITHUB_SHA::7} \
     --set settings.superuserPassword=$TEST_PASSWORD \
     --set ingress.host=$SITE \
-    --set ingress.tls.enabled=false 
+    --set ingress.tls.enabled=false \
+    --set monitoring.enabled=false
 
 # Wait for rollout
 kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE --timeout=300s -w
