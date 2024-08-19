@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "coral-credits.fullname" . }}
+  labels: {{ include "coral-credits.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - honorLabels: true
+      port: metrics
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels: {{ include "coral-credits.selectorLabels" . | nindent 6 }}
