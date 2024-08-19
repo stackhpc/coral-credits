@@ -1,12 +1,16 @@
+import logging
 import uuid
 
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from coral_credits.api import db_exceptions, db_utils, models, serializers
+
+LOG = logging.getLogger(__name__)
 
 
 class CreditAllocationViewSet(viewsets.ModelViewSet):
@@ -138,15 +142,19 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     queryset = models.Consumer.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request):
+    @action(detail=False, methods=["post"], url_path="create")
+    def create_consumer(self, request):
         return self._create_or_update(request)
 
-    def update(self, request):
+    @action(detail=False, methods=["post"], url_path="update")
+    def update_consumer(self, request):
         return self._create_or_update(request, current_lease_required=True)
 
+    @action(detail=False, methods=["post"], url_path="check-create")
     def check_create(self, request):
         return self._create_or_update(request, dry_run=True)
 
+    @action(detail=False, methods=["post"], url_path="check-update")
     def check_update(self, request):
         return self._create_or_update(
             request, current_lease_required=True, dry_run=True
@@ -159,31 +167,35 @@ class ConsumerViewSet(viewsets.ModelViewSet):
         see consumer_tests.py for example requests.
         """
         # TODO(tylerchristie): remove when blazar has commit hook.
-        request.data["lease"]["id"] = uuid.uuid4()
+        if "id" not in request.data["lease"]:
+            LOG.warning("Creating fake UUID for lease.")
+            request.data["lease"]["id"] = uuid.uuid4()
+
         context, lease, current_lease = self._validate_request(
             request, current_lease_required
         )
 
-        if current_lease_required:
-            try:
-                current_consumer, current_resource_requests = (
-                    db_utils.get_current_lease(current_lease)
-                )
-            except models.Consumer.DoesNotExist:
-                return _http_403_forbidden("No matching record found for current lease")
+        LOG.info(
+            f"Incoming Request - Context: {context}, Lease: {lease}, "
+            f"Current Lease: {current_lease}"
+        )
 
+        # Getting required data
         try:
+            current_consumer, current_resource_requests = db_utils.get_current_lease(
+                current_lease_required, context, current_lease
+            )
             resource_provider_account = db_utils.get_resource_provider_account(
                 context.project_id
             )
+            credit_allocations = db_utils.get_all_credit_allocations(
+                resource_provider_account
+            )
+        except models.Consumer.DoesNotExist:
+            return _http_403_forbidden("No matching record found for current lease")
         except models.ResourceProviderAccount.DoesNotExist:
             return _http_403_forbidden("No matching ResourceProviderAccount found")
-
-        credit_allocations = db_utils.get_all_credit_allocations(
-            resource_provider_account
-        )
-
-        if not credit_allocations.exists():
+        except models.CreditAllocation.DoesNotExist:
             return _http_403_forbidden("No active CreditAllocation found")
 
         # Check resource credit availability (first check)
@@ -212,11 +224,6 @@ class ConsumerViewSet(viewsets.ModelViewSet):
         if not dry_run:
             # Account has sufficient credits at time of database query,
             # so we allocate resources.
-            # Update scenario:
-            if current_lease_required:
-                # We have CASCADE behaviour for ResourceConsumptionRecords
-                # Also we roll back all db transactions if the final check fails
-                current_consumer.delete()
             try:
                 db_utils.spend_credits(
                     lease,
@@ -224,6 +231,8 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                     context,
                     resource_requests,
                     allocation_hours,
+                    current_consumer,
+                    current_resource_requests,
                 )
             except IntegrityError as e:
                 # Lease ID is not unique
@@ -231,7 +240,9 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 return _http_403_forbidden(repr(e))
 
             # Final check
+            # Rollback here if credit accounts fall below 0.
             db_utils.check_credit_balance(credit_allocations, resource_requests)
+
             return _http_204_no_content("Consumer and resources requested successfully")
 
         return _http_204_no_content(
@@ -243,11 +254,13 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             data=request.data, current_lease_required=current_lease_required
         )
         resource_request.is_valid(raise_exception=True)
-        consumer_request = resource_request.create(resource_request.validated_data)
+        consumer_create_request = resource_request.create(
+            resource_request.validated_data
+        )
         return (
-            consumer_request.context,
-            consumer_request.lease,
-            consumer_request.current_lease,
+            consumer_create_request.context,
+            consumer_create_request.lease,
+            consumer_create_request.current_lease,
         )
 
 

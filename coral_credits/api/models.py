@@ -47,7 +47,10 @@ class ResourceProviderAccount(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"{self.project_id} for {self.account} in {self.provider}"
+        return (
+            f"Project ID:{self.project_id} for Account:{self.account} "
+            f"in Provider:{self.provider}"
+        )
 
 
 class CreditAllocation(models.Model):
@@ -68,7 +71,7 @@ class CreditAllocation(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"{self.account} from {self.start}"
+        return f"{self.account} - {self.start}"
 
 
 class CreditAllocationResource(models.Model):
@@ -89,7 +92,10 @@ class CreditAllocationResource(models.Model):
         ordering = ("allocation__start",)
 
     def __str__(self) -> str:
-        return f"{self.resource_class} for {self.allocation}"
+        return (
+            f"{self.resource_hours} hours allocated for {self.resource_class} "
+            f"from {self.allocation}"
+        )
 
 
 class Consumer(models.Model):
@@ -117,7 +123,10 @@ class Consumer(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"{self.consumer_ref}@{self.resource_provider_account}"
+        return (
+            f"consumer ref:{self.consumer_ref} with "
+            f"id:{self.consumer_uuid}@{self.resource_provider_account}"
+        )
 
 
 class ResourceConsumptionRecord(models.Model):
@@ -137,4 +146,4 @@ class ResourceConsumptionRecord(models.Model):
         ordering = ("consumer__start",)
 
     def __str__(self) -> str:
-        return f"{self.consumer} from {self.resource_class}"
+        return f"{self.resource_class}:{self.resource_hours} hours for {self.consumer}"

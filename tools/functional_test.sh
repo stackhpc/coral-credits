@@ -227,7 +227,7 @@ RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE
             }
         }
     }" \
-    http://$SITE:$PORT/consumer/)
+    http://$SITE:$PORT/consumer/create/)
 
 if [ "$RESPONSE" -eq 204 ]; then
 		echo "All tests completed."
