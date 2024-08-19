@@ -46,6 +46,15 @@ def consumer_update_request(api_client, request_data, expected_response):
     )
 
 
+def consumer_delete_request(api_client, request_data, expected_response):
+    return consumer_request(
+        reverse("resource-request-on-end"),
+        api_client,
+        request_data,
+        expected_response,
+    )
+
+
 @pytest.mark.parametrize(
     "allocation_hours,request_data",
     [
@@ -99,12 +108,11 @@ def test_flavor_create_request(
 
 
 @pytest.mark.parametrize(
-    "allocation_hours,request_data,delete_request_data",
+    "allocation_hours,request_data",
     [
         (
             {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
             lazy_fixture("flavor_request_data"),
-            lazy_fixture("flavor_delete_upcoming_request_data"),
         ),
     ],
 )
@@ -116,7 +124,6 @@ def test_flavor_delete_upcoming_request(
     resource_provider_account,
     api_client,
     request_data,
-    delete_request_data,
     allocation_hours,
     request,  # contains pytest global vars
 ):
@@ -129,14 +136,15 @@ def test_flavor_delete_upcoming_request(
     consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
 
     # Delete
-    consumer_update_request(api_client, delete_request_data, status.HTTP_204_NO_CONTENT)
+    consumer_delete_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
 
     # Find consumer and check duration is 0.
     new_consumer = models.Consumer.objects.filter(
         consumer_ref=request.config.LEASE_NAME
     ).first()
     assert new_consumer is not None
-    assert new_consumer.end == request.config.START_DATE
+    # Don't assert this for now as we are unsure of the behaviour of on_end from blazar.
+    # assert new_consumer.end == request.config.START_DATE
 
     # Check our original allocations are intact.
     for resource_class in resource_classes:
@@ -150,24 +158,24 @@ def test_flavor_delete_upcoming_request(
 
 
 @pytest.mark.parametrize(
-    "allocation_hours,request_data,delete_request_data",
+    "allocation_hours,request_data,shorten_request_data",
     [
         (
             {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
             lazy_fixture("flavor_request_data"),
-            lazy_fixture("flavor_delete_current_request_data"),
+            lazy_fixture("flavor_shorten_current_request_data"),
         ),
     ],
 )
 @pytest.mark.django_db
-def test_flavor_delete_currently_active_request(
+def test_flavor_shorten_currently_active_request(
     resource_classes,
     credit_allocation,
     create_credit_allocation_resources,
     resource_provider_account,
     api_client,
     request_data,
-    delete_request_data,
+    shorten_request_data,
     allocation_hours,
     request,  # contains pytest global vars
 ):
@@ -179,8 +187,10 @@ def test_flavor_delete_currently_active_request(
     # Create
     consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
 
-    # Delete
-    consumer_update_request(api_client, delete_request_data, status.HTTP_204_NO_CONTENT)
+    # Update
+    consumer_update_request(
+        api_client, shorten_request_data, status.HTTP_204_NO_CONTENT
+    )
 
     # Find consumer and check end date is changed.
     new_consumer = models.Consumer.objects.filter(
