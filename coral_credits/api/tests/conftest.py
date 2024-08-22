@@ -178,27 +178,22 @@ def flavor_request_data(base_request_data):
 
 @pytest.fixture
 def flavor_extend_current_request_data(flavor_request_data, request):
-    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
-    delete_request_data["lease"] = {
+    extend_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
+    extend_request_data["lease"] = {
         "end_date": request.config.END_LATE_DATE.isoformat()
     }
-    return deep_merge(flavor_request_data, delete_request_data)
+    return deep_merge(flavor_request_data, extend_request_data)
 
 
 @pytest.fixture
-def flavor_delete_current_request_data(flavor_request_data, request):
-    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
-    delete_request_data["lease"] = {
+def flavor_shorten_current_request_data(flavor_request_data, request):
+    shorten_request_data = {
+        "current_lease": copy.deepcopy(flavor_request_data["lease"])
+    }
+    shorten_request_data["lease"] = {
         "end_date": request.config.END_EARLY_DATE.isoformat()
     }
-    return deep_merge(flavor_request_data, delete_request_data)
-
-
-@pytest.fixture
-def flavor_delete_upcoming_request_data(flavor_request_data, request):
-    delete_request_data = {"current_lease": copy.deepcopy(flavor_request_data["lease"])}
-    delete_request_data["lease"] = {"end_date": request.config.START_DATE.isoformat()}
-    return deep_merge(flavor_request_data, delete_request_data)
+    return deep_merge(flavor_request_data, shorten_request_data)
 
 
 @pytest.fixture

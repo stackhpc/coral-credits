@@ -1,9 +1,12 @@
+import copy
+from datetime import datetime
 import logging
 import uuid
 
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
+from django.utils.timezone import make_aware
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -158,6 +161,32 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     def check_update(self, request):
         return self._create_or_update(
             request, current_lease_required=True, dry_run=True
+        )
+
+    @action(detail=False, methods=["post"], url_path="on-end")
+    def on_end(self, request):
+        # For a deletion, we convert this to an update request
+        # With the new lease's end date set to now.
+        # TODO(tylerchristie) this is not very nice. we can probably do better.
+        if request.data["lease"]:
+            request.data["current_lease"] = copy.deepcopy(request.data["lease"])
+            if ("start_date" and "end_date") in request.data["lease"]:
+                time_now = make_aware(datetime.now())
+                # Current vs upcoming deletion
+                # We can't just set everything to current time as we don't know
+                # the latency between blazars request and our reception.
+                # Unless we decide on how to round credit allocations.
+                if (
+                    datetime.fromisoformat(request.data["lease"]["start_date"])
+                    < time_now
+                ):
+                    request.data["lease"]["end_date"] = request.data["lease"][
+                        "start_date"
+                    ]
+                else:
+                    request.data["lease"]["end_date"] = time_now.isoformat()
+        return self._create_or_update(
+            request, current_lease_required=True, dry_run=False
         )
 
     @transaction.atomic
