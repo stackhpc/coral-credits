@@ -9,3 +9,4 @@ drf-spectacular==0.27.2
 gunicorn==22.0.0
 prometheus_client==0.20.0
 tzdata==2024.1
+psycopg2-binary==2.9.9
