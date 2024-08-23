@@ -1,35 +1,4 @@
 {
-    "__inputs": [
-      {
-        "name": "DS_PROMETHEUS",
-        "label": "Prometheus",
-        "description": "",
-        "type": "datasource",
-        "pluginId": "prometheus",
-        "pluginName": "Prometheus"
-      }
-    ],
-    "__elements": {},
-    "__requires": [
-      {
-        "type": "grafana",
-        "id": "grafana",
-        "name": "Grafana",
-        "version": "10.4.0"
-      },
-      {
-        "type": "datasource",
-        "id": "prometheus",
-        "name": "Prometheus",
-        "version": "1.0.0"
-      },
-      {
-        "type": "panel",
-        "id": "timeseries",
-        "name": "Time series",
-        "version": ""
-      }
-    ],
     "annotations": {
       "list": [
         {
@@ -49,13 +18,13 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": null,
+    "id": 42,
     "links": [],
     "panels": [
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "prometheus"
         },
         "description": "",
         "fieldConfig": {
@@ -142,7 +111,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -158,7 +127,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -183,10 +152,14 @@
       "list": [
         {
           "allValue": "",
-          "current": {},
+          "current": {
+            "selected": false,
+            "text": "5fcc12ae-513f-4eac-a2e0-e7772f191282",
+            "value": "5fcc12ae-513f-4eac-a2e0-e7772f191282"
+          },
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "definition": "label_values(coral_credits_allocation_hours_per_project,project_id)",
           "hide": 0,
@@ -207,10 +180,18 @@
           "type": "query"
         },
         {
-          "current": {},
+          "current": {
+            "selected": true,
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "definition": "label_values(coral_credits_allocation_hours_per_project,resource_class)",
           "hide": 2,
