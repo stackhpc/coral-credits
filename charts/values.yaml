@@ -130,6 +130,10 @@ service:
 # Monitoring
 monitoring:
   enabled: true
+  dashboard:
+    enabled: true
+    labels:
+      grafana_dashboard: "1"
   
 # Node selector for pods
 nodeSelector: {}
