@@ -1,11 +1,11 @@
-{{- if and .Values.monitoring.enabled .Values.metrics.dashboard.enabled -}}
+{{- if and .Values.monitoring.enabled .Values.monitoring.dashboard.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "coral-credits.fullname" . }}-dashboards
   labels:
     {{- include "coral-credits.labels" . | nindent 4 }}
-    {{- toYaml .Values.metrics.dashboard.labels | nindent 4 }}
+    {{- toYaml .Values.monitoring.dashboard.labels | nindent 4 }}
 data:
   coral_credits_user_dashboard.json: |
     {{- .Files.Get "files/user_dashboard.json" | nindent 4 }}
