@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-migrate"
+  labels: {{ include "coral-credits.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}-migrate"
+      labels: {{ include "coral-credits.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate-db
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+                python /coral-credits/manage.py migrate --run-syncdb
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "coral-credits.fullname" . }}
+        - name: runtime-settings
+          secret:
+            secretName: {{ include "coral-credits.fullname" . }}
+        - name: tmp
+          emptyDir: {}
+
