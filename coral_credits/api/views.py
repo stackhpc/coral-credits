@@ -176,13 +176,14 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 # We can't just set everything to current time as we don't know
                 # the latency between blazars request and our reception.
                 # Unless we decide on how to round credit allocations.
-                if (
-                    datetime.fromisoformat(request.data["lease"]["start_date"])
-                    < time_now
-                ):
-                    request.data["lease"]["end_date"] = request.data["lease"][
-                        "start_date"
-                    ]
+                req_start_date = datetime.fromisoformat(
+                    request.data["lease"]["start_date"]
+                )
+                if req_start_date.tzinfo is None:
+                    req_start_date = make_aware(req_start_date)
+                if req_start_date < time_now:
+                    # TODO(johngarbutt) we need to check what we have in the db!
+                    request.data["lease"]["end_date"] = req_start_date.isoformat()
                 else:
                     request.data["lease"]["end_date"] = time_now.isoformat()
         return self._create_or_update(
