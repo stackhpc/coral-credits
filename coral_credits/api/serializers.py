@@ -130,7 +130,7 @@ class PhysicalReservationSerializer(BaseReservationSerializer):
 class FlavorReservationSerializer(BaseReservationSerializer):
     amount = serializers.IntegerField()
     flavor_id = serializers.CharField()
-    affinity = serializers.CharField(required=False, default="None")
+    affinity = serializers.CharField(required=False, default=None, allow_null=True)
 
 
 class VirtualReservationSerializer(BaseReservationSerializer):
@@ -138,8 +138,8 @@ class VirtualReservationSerializer(BaseReservationSerializer):
     vcpus = serializers.IntegerField()
     memory_mb = serializers.IntegerField()
     disk_gb = serializers.IntegerField()
-    affinity = serializers.CharField(required=False, default="None")
-    resource_properties = serializers.CharField(required=False, allow_blank=True)
+    affinity = serializers.CharField(required=False, default=None, allow_blank=True)
+    resource_properties = serializers.CharField(required=False, allow_null=True)
 
 
 class ReservationFactory:

@@ -42,7 +42,7 @@ class PhysicalReservation(BaseReservation):
 class FlavorReservation(BaseReservation):
     amount: int
     flavor_id: str
-    affinity: str = "None"
+    affinity: Optional[str] = None
 
 
 @dataclass(kw_only=True)
@@ -51,7 +51,7 @@ class VirtualReservation(BaseReservation):
     vcpus: int
     memory_mb: int
     disk_gb: int
-    affinity: str = "None"
+    affinity: Optional[str] = None
     resource_properties: Optional[str] = None
 
 

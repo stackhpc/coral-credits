@@ -162,7 +162,7 @@ def flavor_request_data(base_request_data):
                     "amount": 2,
                     "flavor_id": "e26a4241-b83d-4516-8e0e-8ce2665d1966",
                     "resource_type": "flavor:instance",
-                    "affinity": "None",
+                    "affinity": None,
                     "allocations": [],
                 }
             ],
@@ -244,7 +244,7 @@ def virtual_request_data(base_request_data):
                     "vcpus": 1,
                     "memory_mb": 1,
                     "disk_gb": 0,
-                    "affinity": "None",
+                    "affinity": None,
                     "resource_properties": "",
                     "allocations": [],
                 }
