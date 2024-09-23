@@ -313,9 +313,10 @@ def spend_credits(
         )
         # Subtract expenditure from CreditAllocationResource
         # Or add, if the update delta is < 0
-        credit_allocations[resource_class].resource_hours = (
+        credit_allocations[resource_class].resource_hours = round(
             credit_allocations[resource_class].resource_hours
-            - resource_requests[resource_class]
+            - resource_requests[resource_class],
+            0,
         )
         credit_allocations[resource_class].save()
 
