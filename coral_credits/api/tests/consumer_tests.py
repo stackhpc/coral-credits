@@ -178,7 +178,7 @@ def test_flavor_delete_current_request(
     request,  # contains pytest global vars
 ):
     # Allocate resource credit
-    cas = create_credit_allocation_resources(
+    create_credit_allocation_resources(
         early_credit_allocation, resource_classes, allocation_hours
     )
 
