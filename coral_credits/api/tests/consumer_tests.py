@@ -182,8 +182,6 @@ def test_flavor_delete_current_request(
         early_credit_allocation, resource_classes, allocation_hours
     )
 
-    print(cas)
-
     # Create
     consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
 
