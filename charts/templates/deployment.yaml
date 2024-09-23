@@ -18,6 +18,19 @@ spec:
       initContainers:
         - name: migrate-db
           image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+                python /coral-credits/manage.py migrate --run-syncdb
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: runtime-settings
+              mountPath: /etc/coral-credits/settings.d
+              readOnly: true
+        - name: create-super-user
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
           env:
           {{ with (include "coral-credits.djangoSecretName" . ) }}
           - name: DJANGO_SUPERUSER_USERNAME
@@ -37,11 +50,10 @@ spec:
                 key: password
           {{ end }}
           command: ["/bin/sh"]
-          # Capture exit code from createsuperuser as it is not idempotent.
+          #TODO(jake): Masking createsuperuser with return code 0, this needs to be made idempotent.
           args:
             - -c
-            - >- 
-                python /coral-credits/manage.py migrate --run-syncdb &&
+            - >-
                 python /coral-credits/manage.py createsuperuser --no-input || echo $?
           volumeMounts:
             - name: data
