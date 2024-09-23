@@ -187,16 +187,14 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                     request.data["lease"]["end_date"] = time_now.isoformat()
                 else:
                     request.data["lease"]["end_date"] = req_start_date.isoformat()
+        request.data["current_lease"] = request.data["lease"]
         LOG.info(f"About to process on-end request:\n{request.data}")
         return self._create_or_update(
-            request,
-            is_delete=True,
+            request, current_lease_required=True, dry_run=False
         )
 
     @transaction.atomic
-    def _create_or_update(
-        self, request, current_lease_required=False, dry_run=False, is_delete=False
-    ):
+    def _create_or_update(self, request, current_lease_required=False, dry_run=False):
         """Process a request for a reservation.
 
         see consumer_tests.py for example requests.
@@ -209,10 +207,6 @@ class ConsumerViewSet(viewsets.ModelViewSet):
         context, lease, current_lease = self._validate_request(
             request, current_lease_required
         )
-        if is_delete:
-            # TODO(johng) hack to attemt to make on-end work
-            current_lease = lease
-            current_lease_required = True
 
         LOG.info(
             f"Incoming Request - Context: {context}, Lease: {lease}, "
