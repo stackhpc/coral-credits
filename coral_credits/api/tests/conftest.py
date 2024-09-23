@@ -20,6 +20,7 @@ def pytest_configure(config):
     config.END_DATE = config.START_DATE + timedelta(days=1)
     config.END_EARLY_DATE = config.START_DATE + timedelta(days=0.75)
     config.END_LATE_DATE = config.START_DATE + timedelta(days=1.5)
+    config.START_EARLY_DATE = config.START_DATE + timedelta(days=-0.75)
 
 
 # Get auth token
@@ -65,6 +66,16 @@ def credit_allocation(account, request):
         account=account,
         name="test",
         start=request.config.START_DATE,
+        end=request.config.END_DATE,
+    )
+
+
+@pytest.fixture
+def early_credit_allocation(account, request):
+    return models.CreditAllocation.objects.create(
+        account=account,
+        name="test",
+        start=request.config.START_EARLY_DATE,
         end=request.config.END_DATE,
     )
 
@@ -194,6 +205,19 @@ def flavor_shorten_current_request_data(flavor_request_data, request):
         "end_date": request.config.END_EARLY_DATE.isoformat()
     }
     return deep_merge(flavor_request_data, shorten_request_data)
+
+
+@pytest.fixture
+def start_early_request_data(flavor_request_data, request):
+    zero_hours_request_data = {
+        "lease": {
+            "start_date": request.config.START_EARLY_DATE.isoformat(),
+            "end_date": (
+                request.config.START_EARLY_DATE + timedelta(days=1)
+            ).isoformat(),
+        }
+    }
+    return deep_merge(flavor_request_data, zero_hours_request_data)
 
 
 @pytest.fixture
