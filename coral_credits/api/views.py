@@ -184,9 +184,9 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                     req_start_date = make_aware(req_start_date)
                 if req_start_date < time_now:
                     # TODO(johngarbutt) we need to check what we have in the db!
-                    request.data["lease"]["end_date"] = req_start_date.isoformat()
-                else:
                     request.data["lease"]["end_date"] = time_now.isoformat()
+                else:
+                    request.data["lease"]["end_date"] = req_start_date.isoformat()
         LOG.info(f"About to process on-end request:\n{request.data}")
         return self._create_or_update(
             request,
