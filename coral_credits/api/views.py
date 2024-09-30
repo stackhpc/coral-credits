@@ -147,6 +147,7 @@ class ConsumerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="create")
     def create_consumer(self, request):
+        LOG.info(f"About to process create commit:\n{request.data}")
         return self._create_or_update(request)
 
     @action(detail=False, methods=["post"], url_path="update")
@@ -176,15 +177,18 @@ class ConsumerViewSet(viewsets.ModelViewSet):
                 # We can't just set everything to current time as we don't know
                 # the latency between blazars request and our reception.
                 # Unless we decide on how to round credit allocations.
-                if (
-                    datetime.fromisoformat(request.data["lease"]["start_date"])
-                    < time_now
-                ):
-                    request.data["lease"]["end_date"] = request.data["lease"][
-                        "start_date"
-                    ]
-                else:
+                req_start_date = datetime.fromisoformat(
+                    request.data["lease"]["start_date"]
+                )
+                if req_start_date.tzinfo is None:
+                    req_start_date = make_aware(req_start_date)
+                if req_start_date < time_now:
+                    # TODO(johngarbutt) we need to check what we have in the db!
                     request.data["lease"]["end_date"] = time_now.isoformat()
+                else:
+                    request.data["lease"]["end_date"] = req_start_date.isoformat()
+        request.data["current_lease"] = request.data["lease"]
+        LOG.info(f"About to process on-end request:\n{request.data}")
         return self._create_or_update(
             request, current_lease_required=True, dry_run=False
         )

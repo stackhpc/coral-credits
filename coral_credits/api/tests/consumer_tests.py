@@ -158,6 +158,65 @@ def test_flavor_delete_upcoming_request(
 
 
 @pytest.mark.parametrize(
+    "allocation_hours,request_data",
+    [
+        (
+            {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
+            lazy_fixture("start_early_request_data"),
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_flavor_delete_current_request(
+    resource_classes,
+    early_credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    request_data,
+    allocation_hours,
+    request,  # contains pytest global vars
+):
+    # Allocate resource credit
+    create_credit_allocation_resources(
+        early_credit_allocation, resource_classes, allocation_hours
+    )
+
+    # Create
+    consumer_create_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
+
+    # Delete
+    consumer_delete_request(api_client, request_data, status.HTTP_204_NO_CONTENT)
+
+    # Find consumer and check end date is changed.
+    new_consumer = models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).first()
+    assert new_consumer is not None
+
+    # END_EARLY_DATE is 3/4 the duration of the original allocation.
+    # on_end will set the end_time to datetime.now()
+    # so we should have consumed 75% of the reservation
+    # and refunded 25%.
+
+    # Check our allocations are correct.
+    for resource_class in resource_classes:
+        c = models.CreditAllocationResource.objects.filter(
+            resource_class=resource_class.id
+        ).first()
+        assert c.resource_hours == allocation_hours[resource_class.name] * 0.25
+
+    # Check consumption records are correct
+    for resource_class in resource_classes:
+        rcr = models.ResourceConsumptionRecord.objects.get(
+            consumer=new_consumer, resource_class=resource_class.id
+        )
+        assert rcr.resource_hours == pytest.approx(
+            allocation_hours[resource_class.name] * 0.75, 0.5
+        )
+
+
+@pytest.mark.parametrize(
     "allocation_hours,request_data,shorten_request_data",
     [
         (
