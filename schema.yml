@@ -1,0 +1,1549 @@
+openapi: 3.0.3
+info:
+  title: Coral Credits API
+  version: 0.1.0
+  description: 'Coral credits is a resource management system that helps build a         "coral
+    reef style" fixed capacity cloud, cooperatively sharing community         resources
+    through interfaces such as: Azimuth, OpenStack Blazar and Slurm.'
+paths:
+  /account/:
+    get:
+      operationId: account_list
+      tags:
+      - account
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditAccount'
+          description: ''
+    post:
+      operationId: account_create
+      tags:
+      - account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccount'
+          description: ''
+  /account/{id}/:
+    get:
+      operationId: account_retrieve
+      description: Retreives a Credit Account Summary
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit account.
+        required: true
+      tags:
+      - account
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccount'
+          description: ''
+    put:
+      operationId: account_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit account.
+        required: true
+      tags:
+      - account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAccount'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccount'
+          description: ''
+    patch:
+      operationId: account_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit account.
+        required: true
+      tags:
+      - account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAccount'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccount'
+          description: ''
+    delete:
+      operationId: account_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit account.
+        required: true
+      tags:
+      - account
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /allocation/:
+    get:
+      operationId: allocation_list
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditAllocation'
+          description: ''
+    post:
+      operationId: allocation_create
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+        required: true
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocation'
+          description: ''
+  /allocation/{allocation_pk}/resources/:
+    get:
+      operationId: allocation_resources_list
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditAllocationResource'
+          description: ''
+    post:
+      operationId: allocation_resources_create
+      description: |-
+        Allocate credits to a dictionary of resource classes.
+
+        Example Request:
+        {
+            "resources": {"VCPU": 50, "MEMORY_MB": 2000, "DISK_GB": 1000},
+        }
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocationResource'
+          description: ''
+  /allocation/{allocation_pk}/resources/{id}/:
+    get:
+      operationId: allocation_resources_retrieve
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation resource.
+        required: true
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocationResource'
+          description: ''
+    put:
+      operationId: allocation_resources_update
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation resource.
+        required: true
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAllocationResource'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocationResource'
+          description: ''
+    patch:
+      operationId: allocation_resources_partial_update
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation resource.
+        required: true
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocationResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocationResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocationResource'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocationResource'
+          description: ''
+    delete:
+      operationId: allocation_resources_destroy
+      parameters:
+      - in: path
+        name: allocation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation resource.
+        required: true
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /allocation/{id}/:
+    get:
+      operationId: allocation_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation.
+        required: true
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocation'
+          description: ''
+    put:
+      operationId: allocation_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation.
+        required: true
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreditAllocation'
+        required: true
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocation'
+          description: ''
+    patch:
+      operationId: allocation_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation.
+        required: true
+      tags:
+      - allocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditAllocation'
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAllocation'
+          description: ''
+    delete:
+      operationId: allocation_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this credit allocation.
+        required: true
+      tags:
+      - allocation
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api-token-auth/:
+    post:
+      operationId: api_token_auth_create
+      tags:
+      - api-token-auth
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /consumer/:
+    get:
+      operationId: consumer_list
+      tags:
+      - consumer
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+    post:
+      operationId: consumer_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /consumer/{id}/:
+    get:
+      operationId: consumer_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this consumer.
+        required: true
+      tags:
+      - consumer
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+    put:
+      operationId: consumer_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this consumer.
+        required: true
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+    patch:
+      operationId: consumer_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this consumer.
+        required: true
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsumerRequest'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+    delete:
+      operationId: consumer_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this consumer.
+        required: true
+      tags:
+      - consumer
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /consumer/check-create/:
+    post:
+      operationId: consumer_check_create_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /consumer/check-update/:
+    post:
+      operationId: consumer_check_update_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /consumer/create/:
+    post:
+      operationId: consumer_create_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /consumer/on-end/:
+    post:
+      operationId: consumer_on_end_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /consumer/update/:
+    post:
+      operationId: consumer_update_create
+      tags:
+      - consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsumerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumerRequest'
+          description: ''
+  /resource_class/:
+    get:
+      operationId: resource_class_list
+      tags:
+      - resource_class
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceClass'
+          description: ''
+    post:
+      operationId: resource_class_create
+      tags:
+      - resource_class
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceClass'
+          description: ''
+  /resource_class/{id}/:
+    get:
+      operationId: resource_class_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource class.
+        required: true
+      tags:
+      - resource_class
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceClass'
+          description: ''
+    put:
+      operationId: resource_class_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource class.
+        required: true
+      tags:
+      - resource_class
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceClass'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceClass'
+          description: ''
+    patch:
+      operationId: resource_class_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource class.
+        required: true
+      tags:
+      - resource_class
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceClass'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceClass'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceClass'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceClass'
+          description: ''
+    delete:
+      operationId: resource_class_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource class.
+        required: true
+      tags:
+      - resource_class
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /resource_provider/:
+    get:
+      operationId: resource_provider_list
+      tags:
+      - resource_provider
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceProvider'
+          description: ''
+    post:
+      operationId: resource_provider_create
+      tags:
+      - resource_provider
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProvider'
+          description: ''
+  /resource_provider/{id}/:
+    get:
+      operationId: resource_provider_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider.
+        required: true
+      tags:
+      - resource_provider
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProvider'
+          description: ''
+    put:
+      operationId: resource_provider_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider.
+        required: true
+      tags:
+      - resource_provider
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceProvider'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProvider'
+          description: ''
+    patch:
+      operationId: resource_provider_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider.
+        required: true
+      tags:
+      - resource_provider
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProvider'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProvider'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProvider'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProvider'
+          description: ''
+    delete:
+      operationId: resource_provider_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider.
+        required: true
+      tags:
+      - resource_provider
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /resource_provider_account/:
+    get:
+      operationId: resource_provider_account_list
+      tags:
+      - resource_provider_account
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceProviderAccount'
+          description: ''
+    post:
+      operationId: resource_provider_account_create
+      tags:
+      - resource_provider_account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProviderAccount'
+          description: ''
+  /resource_provider_account/{id}/:
+    get:
+      operationId: resource_provider_account_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider account.
+        required: true
+      tags:
+      - resource_provider_account
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProviderAccount'
+          description: ''
+    put:
+      operationId: resource_provider_account_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider account.
+        required: true
+      tags:
+      - resource_provider_account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceProviderAccount'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProviderAccount'
+          description: ''
+    patch:
+      operationId: resource_provider_account_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider account.
+        required: true
+      tags:
+      - resource_provider_account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProviderAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProviderAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceProviderAccount'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceProviderAccount'
+          description: ''
+    delete:
+      operationId: resource_provider_account_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource provider account.
+        required: true
+      tags:
+      - resource_provider_account
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+      required:
+      - password
+      - token
+      - username
+    ConsumerRequest:
+      type: object
+      properties:
+        context:
+          $ref: '#/components/schemas/Context'
+        lease:
+          $ref: '#/components/schemas/Lease'
+        current_lease:
+          allOf:
+          - $ref: '#/components/schemas/Lease'
+          nullable: true
+      required:
+      - context
+      - lease
+    Context:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        auth_url:
+          type: string
+          format: uri
+        region_name:
+          type: string
+          nullable: true
+      required:
+      - auth_url
+      - project_id
+      - user_id
+    CreditAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created
+      - email
+      - id
+      - name
+      - url
+    CreditAllocation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        account:
+          type: string
+          format: uri
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+      required:
+      - account
+      - created
+      - end
+      - id
+      - name
+      - start
+    CreditAllocationResource:
+      type: object
+      properties:
+        resource_class:
+          $ref: '#/components/schemas/ResourceClass'
+        resource_hours:
+          type: number
+          format: double
+      required:
+      - resource_class
+      - resource_hours
+    Lease:
+      type: object
+      properties:
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        before_end_date:
+          type: string
+          format: date-time
+          nullable: true
+        reservations:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+          format: uuid
+      required:
+      - end_date
+      - id
+      - name
+      - reservations
+      - start_date
+    PatchedConsumerRequest:
+      type: object
+      properties:
+        context:
+          $ref: '#/components/schemas/Context'
+        lease:
+          $ref: '#/components/schemas/Lease'
+        current_lease:
+          allOf:
+          - $ref: '#/components/schemas/Lease'
+          nullable: true
+    PatchedCreditAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCreditAllocation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        account:
+          type: string
+          format: uri
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+    PatchedCreditAllocationResource:
+      type: object
+      properties:
+        resource_class:
+          $ref: '#/components/schemas/ResourceClass'
+        resource_hours:
+          type: number
+          format: double
+    PatchedResourceClass:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedResourceProvider:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        info_url:
+          type: string
+          format: uri
+          maxLength: 200
+    PatchedResourceProviderAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        account:
+          type: string
+          format: uri
+        provider:
+          type: string
+          format: uri
+        project_id:
+          type: string
+          format: uuid
+    ResourceClass:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created
+      - id
+      - name
+      - url
+    ResourceProvider:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        info_url:
+          type: string
+          format: uri
+          maxLength: 200
+      required:
+      - created
+      - email
+      - id
+      - info_url
+      - name
+      - url
+    ResourceProviderAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        account:
+          type: string
+          format: uri
+        provider:
+          type: string
+          format: uri
+        project_id:
+          type: string
+          format: uuid
+      required:
+      - account
+      - id
+      - project_id
+      - provider
+      - url
+  securitySchemes:
+    tokenAuth:
+      type: http
+      scheme: bearer

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Coral Credits Mission - Coral Credits</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Coral Credits Mission";
+        var mkdocs_page_input_path = "mission/index.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+</head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Coral Credits
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Mission</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="./">Coral Credits Mission</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#on-boarding-accounts-projects-and-users">On-boarding Accounts, Projects and Users</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#resource-class-and-resource-class-hours">Resource Class and Resource Class Hours</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#allocating-credits-to-accounts">Allocating credits to Accounts</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#resource-providers">Resource Providers</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#resource-consumption-request">Resource Consumption Request</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-azimuth-short-lived-platform">Example: Azimuth short lived platform</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-azimuth-long-lived-platform">Example: Azimuth long lived platform</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-azimuth-variable-resource-usage">Example: Azimuth variable resource usage</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-openstack-blazar-reservation">Example: OpenStack Blazar reservation</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-many-openstack-projects-one-account">Example: Many OpenStack projects, one account</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-slurm-batch-job-credits">Example: Slurm batch job credits</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-slurm-reservations">Example: Slurm reservations</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-onboarding-to-public-cloud">Example: Onboarding to Public Cloud</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-shared-job-queue-idea">Example: Shared Job Queue (idea)</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-juypter-hub-idea">Example: Juypter Hub (idea)</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-seedcorn-allocation">Example: Seedcorn allocation</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#audit-logs">Audit logs</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#visibility-for-account-holders">Visibility for Account holders</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#prometheus-metrics-for-operators">Prometheus metrics for operators</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#periodic-reconciliation">Periodic reconciliation</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#no-tracking-of-usage-or-efficiency">No tracking of usage or efficiency</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#policy">Policy</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Coral Credits</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item">Mission</li>
+<li class="breadcrumb-item active">Coral Credits Mission</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="coral-credits-mission">Coral Credits Mission</h1>
+<p>Coral Credits aims to support the building of a "coral reef style" fixed capacity cloud.
+A Coral reef style cloud involves cooperatively sharing resources
+to maximise your investiment in both people and cloud resources.</p>
+<p>Coral credits are focused on how to support sharing of
+resources from a federated e-infrastructure (or community cloud)
+where resources are consumed via multiple interfaces such as:
+Azimuth, OpenStack Blazar and Slurm</p>
+<h2 id="on-boarding-accounts-projects-and-users">On-boarding Accounts, Projects and Users</h2>
+<p>We are assuming clouds are trying to follow the
+<a href="https://aarc-project.eu/architecture/">AARC blueprint</a>,
+such that user groups are managed via a central AAAI proxy,
+typically based on <a href="https://indigo-iam.github.io/">Indigo IAM</a>
+or <a href="https://www.keycloak.org/">Keycloak</a>.</p>
+<p>Typically this means the project lead (or principal investigator)
+is responsible for ensuring the membership of the groups they
+manage in the central AAAI proxy are correct.</p>
+<p>Coral Credit Accounts are assocaited to an account,
+and access to that account is limited to a group
+defined in the central AAAI proxy. This group typically
+has access to many different resource providers,
+and often uses more than one interface to access those resources.</p>
+<h2 id="resource-class-and-resource-class-hours">Resource Class and Resource Class Hours</h2>
+<p>The coral credits operators are responsible for defining
+the list of available resource classes.
+We will use the definition of resource classes used by OpenStack
+and defined in the python library
+<a href="https://docs.openstack.org/os-resource-classes/latest/">os-resource-classes</a></p>
+<h3 id="allocating-credits-to-accounts">Allocating credits to Accounts</h3>
+<p>A federation manager is typically responsible for updating the
+allocation of resource credits given to each account.</p>
+<p>A credit allocation has the following properties:</p>
+<ul>
+<li>a single account it is associated with</li>
+<li>a start date and an end date</li>
+<li>credits are a dict of resource class to resource class hours</li>
+<li>list of one or more resource providers
+  where you can consume these credits,
+  with the default being any resource provider</li>
+</ul>
+<p>To simplify the initial implementation
+no account can have overlapping credits
+valid for the same resource provider,
+although an existing allocation can be increased
+or decresed at any time.
+The hope is to add this support in a future,
+under the assumption any resource consumption
+is only from a single credit pool.</p>
+<h2 id="resource-providers">Resource Providers</h2>
+<p>There are places where an account gets to
+consume their allocated credits.</p>
+<p>Coral credits operator is responsible for
+onboarding a particular resource provider
+and giving them a token to access the
+resource consumption API.</p>
+<h2 id="resource-consumption-request">Resource Consumption Request</h2>
+<p>Cloud credits are consumed at a specfiic Resource
+Provider. The units are resource class hours.
+The Resource Provider has to map their local view
+of an account and user into how Coral Cloud Credits
+views that account. Note this means the user reference
+given is likely specific to each resource provider,
+although the recomendation will be to use an email
+address, to make differences between resource providers
+less likely.</p>
+<p>Resource providers should create an appropriate
+resource consumption request, before allowing
+resources to be consumed.
+Only if enough credits are availabe for the
+duration of the request will the request be
+accepted by the coral credit system.</p>
+<p>A resource consumtion request has the following properties:</p>
+<ul>
+<li>account</li>
+<li>resources provider</li>
+<li>resources consumption interface
+  (e.g. Blazar or Azimuth or Slurm)</li>
+<li>email address of user requesting the resource</li>
+<li>resource footprint,
+  i.e. a list of resource class and float amounts</li>
+<li>proposed start date</li>
+<li>optionally a proposed end date, if ommitted
+  we return when whatever date is first, when
+  all credits are used or when all credits have
+  expired</li>
+</ul>
+<h3 id="example-azimuth-short-lived-platform">Example: Azimuth short lived platform</h3>
+<p>Azimuth plaforms are now forced to pick an end date,
+such that we can make a credit consumption request
+for a platform we are about to create.</p>
+<p>If there are not enough credits, it will be clear
+what credits are required to create the platform,
+possbily including which platforms could be
+stopped early to free up credits for the requested
+platform.</p>
+<p>When a platform is stopped before the originially
+agreed time, the consmption record should be
+updated with the new end date, returning the credits
+back to the user.</p>
+<h3 id="example-azimuth-long-lived-platform">Example: Azimuth long lived platform</h3>
+<p>Where platforms are long lived, the scheduled end
+date need to be either when their current credits
+expire, or possibly sooner if the proposed
+platform will consume all reminaing credits before
+those credits expire.</p>
+<p>Users need to be warned when platforms are about
+to be automatically deleted, so they can get
+additional credits allocated.</p>
+<p>When credits are allocated "back to back" with no
+gap, the user is able to request a change to the
+end date for the existing credit consumption
+request, and with the option to extend to the
+maximun date allowed given the current credit
+allocation for the associated account.</p>
+<h3 id="example-azimuth-variable-resource-usage">Example: Azimuth variable resource usage</h3>
+<p>All the platforms so far have assumed a uniform
+resource usage throught the lifetime of the
+platform.</p>
+<p>While not supported in the initial implemention,
+we need to support the a variety of increases
+and decreases in resource during the lifetime
+of the cluster.
+We likely need to have the option for resource
+consumption requests resource footprint
+records to have a start and end date that is
+indepent of the overall resource consumption
+request.</p>
+<h3 id="example-openstack-blazar-reservation">Example: OpenStack Blazar reservation</h3>
+<p>This is very similar to the Azimuth case,
+except its for an arbitry reservation via
+the Blazar API.</p>
+<p>To help reservations line up nicely,
+and reduce resource fragmentation,
+we could enforce that we round up credits
+to the nearer time window (e.g. 1 hour,
+or one of three 8hr working day windows
+each day).</p>
+<h3 id="example-many-openstack-projects-one-account">Example: Many OpenStack projects, one account</h3>
+<p>It is common to have one project be given separate
+openstack projects for Dev/Test, Staging and Production.
+In this case, it would be good if they all share a single
+credit account, although its clear they which openstack
+project is consuming the resources.</p>
+<h3 id="example-slurm-batch-job-credits">Example: Slurm batch job credits</h3>
+<p>You could have a single pool of credits,
+where you could self-service request that
+a some amount of Coral Credits are given to
+your Slurm account, such that you can submit
+some jobs to your chosen Slurm cluster.</p>
+<p>For example, you could reserve 30 days of 1k CPU hours
+with a Slurm cluster, and if accepted those
+cloud credits are consumed from the central pool.
+If that Slurm cluster is very busy, it might not
+have any available for your selected 30 day period,
+but there might some available next month.
+With the idea that a specific federation only has
+a limited number of CPU hours available each month
+from that Slurm system, and users reserve some of
+those, on-demand, when they need need them,
+and they have not spent them on other cloud credits.</p>
+<p>Its possible that very large credit delegations
+to a slurm cluster could be used to expand the slurm
+cluster using available cloud resources, depending
+on them being from a shared pool of resources,
+such as a single OpenStack Ironic based cloud.</p>
+<h3 id="example-slurm-reservations">Example: Slurm reservations</h3>
+<p>Similar to Blazar, you could imagine building the
+option to self service Slurm reservations against
+a shared resource pool.</p>
+<h3 id="example-onboarding-to-public-cloud">Example: Onboarding to Public Cloud</h3>
+<p>Without care people can run up unexpected
+cloud bills. Automation to convert account
+credits into a public cloud account,
+correctly setup with spend limits,
+bringing the pre-paid credit system to
+public clouds.</p>
+<p>With all transfer of credits, care must
+be taken to ensure unused credits are
+refundable when possible, such as public
+cloud spend (where possible) is capped
+rather than pre-paid as such. Work is
+needed to understand how this works
+with JISC OCRE:
+https://www.jisc.ac.uk/ocre-cloud-framework</p>
+<h3 id="example-shared-job-queue-idea">Example: Shared Job Queue (idea)</h3>
+<p>There are various systems that could create a
+job queue that spans multiple resource providers
+(or in some cases a common interface at multiple
+providers):</p>
+<ul>
+<li>https://armadaproject.io/</li>
+<li>https://dirac.readthedocs.io/en/latest/index.html</li>
+<li>https://kueue.sigs.k8s.io/</li>
+<li>https://github.com/elixir-cloud-aai/cwl-WES</li>
+<li>https://nextflow.io/</li>
+</ul>
+<p>Cloud credit users could be consuming cloud credits
+when they submit large groups or jobs, (or maybe the
+user trades in cloud credits for some credits on the
+shared job queue).</p>
+<p>Some "free" or "cheaper" queues could exist
+for preemtable jobs, that could help consume
+the free capacity that exists between cloud
+reservations.</p>
+<h3 id="example-juypter-hub-idea">Example: Juypter Hub (idea)</h3>
+<p>When a user logs into jupyer hub, and their container
+is spun up, maybe this could be blocked (using a custom
+Authorization plugin or jupyterhub-singleuser wrapper)
+if the user doesn't have any credits left,
+along side matching configuration in the idle-culling system.</p>
+<h3 id="example-seedcorn-allocation">Example: Seedcorn allocation</h3>
+<p>One thing not possible with quota, is being
+able to hand out a very small amount of resoruce
+for people to try things out. You could say
+all members of an instituiton automatically get
+a seedcorn allocation they could use.
+This could become a default allocation amount
+for any automatically created accounts.</p>
+<h2 id="audit-logs">Audit logs</h2>
+<p>All changes should be recorded in an audit log,
+that can be quiried via the API</p>
+<h2 id="visibility-for-account-holders">Visibility for Account holders</h2>
+<p>There should be a clear view of:</p>
+<ul>
+<li>all active resource allocations for the account</li>
+<li>all consumers associated with each resource allocation,
+  so its clear how the credits are being consumed</li>
+<li>A prediction of how many credits will be left
+  at the end of the allocation</li>
+</ul>
+<h2 id="prometheus-metrics-for-operators">Prometheus metrics for operators</h2>
+<p>Various stats should be made availabe via a prometheus
+metrics endpoint, including these per account metrics:</p>
+<ul>
+<li>size of current allocated credits</li>
+<li>size of any not current credits</li>
+<li>remining amount for current active credit allocations</li>
+<li>any active resource consumption records,
+  including user and account details</li>
+</ul>
+<h2 id="periodic-reconciliation">Periodic reconciliation</h2>
+<p>Each resource provider is responsble for regularly checking
+if there is any drift between the current resource consumption
+requests, and the current state of resoruce consumption records.
+Only the service knows how to map the records in coral credits
+back to the real resources in that service.</p>
+<h2 id="no-tracking-of-usage-or-efficiency">No tracking of usage or efficiency</h2>
+<p>Coral credits on credit allocations and consumption records
+per account, not the current usage in each service.
+Coral credis does not track if the resources are being fully
+utilized (e.g. job efficieny).</p>
+<h2 id="policy">Policy</h2>
+<p>Resource Providers, combined with their use of the central
+AAI proxy, must ensure users have accepted all policies
+before requesting a resource.</p>
+<p>The Coral Cloud credits admin must ensure the account PI
+has accepted all the policies for the duration of any
+credit allocation to thier account.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href=".." title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../api/" title="API Reference">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+<p>Copyright © StackHPC 2024</p>
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href=".." style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../api/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+<script>
+            window.update_swagger_ui_iframe_height = function (id) {
+                var iFrameID = document.getElementById(id);
+                if (iFrameID) {
+                    full_height = (iFrameID.contentWindow.document.body.scrollHeight + 80) + "px";
+                    iFrameID.height = full_height;
+                    iFrameID.style.height = full_height;
+                }
+            }
+        
+            let iframe_id_list = []
+            var iframes = document.getElementsByClassName("swagger-ui-iframe");
+            for (var i = 0; i < iframes.length; i++) { 
+                iframe_id_list.push(iframes[i].getAttribute("id"))
+            }
+        
+            let ticking = true;
+            
+            document.addEventListener('scroll', function(e) {
+                if (!ticking) {
+                    window.requestAnimationFrame(()=> {
+                        let half_vh = window.innerHeight/2;
+                        for(var i = 0; i < iframe_id_list.length; i++) {
+                            let element = document.getElementById(iframe_id_list[i])
+                            if(element==null){
+                                return
+                            }
+                            let diff = element.getBoundingClientRect().top
+                            if(element.contentWindow.update_top_val){
+                                element.contentWindow.update_top_val(half_vh - diff)
+                            }
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        </script></body>
+</html>
