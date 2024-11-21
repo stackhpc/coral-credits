@@ -7,6 +7,22 @@ nav:
   - Home: index.md
   - Mission:
       - mission/index.md
+  - API Reference: docs/api.md
 
 theme:
   name: readthedocs
+
+plugins:
+  - search
+  - mkdocs-simple-hooks:
+      hooks:
+        on_pre_build: "docs.hooks:generate_schema"
+
+markdown_extensions:
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+
+# Configuration for API documentation
+extra:
+  schema_file: schema.yml
