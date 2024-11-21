@@ -28,9 +28,13 @@ jobs:
         with:
           python-version: 3.x
 
-      - name: Install dependencies
+      - name: Install doc dependencies
         run: |
           pip install -r requirements-docs.txt
+      
+      - name: Install django dependencies
+        run: |
+          pip install -r requirements.txt
 
       - name: Build and deploy documentation
         run: mkdocs gh-deploy --force
