@@ -144,6 +144,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 class ConsumerViewSet(viewsets.ModelViewSet):
     queryset = models.Consumer.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ConsumerRequestSerializer
 
     @action(detail=False, methods=["post"], url_path="create")
     def create_consumer(self, request):

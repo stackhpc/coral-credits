@@ -28,6 +28,9 @@ jobs:
         with:
           python-version: 3.x
 
-      - run: pip install -r requirements-docs.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-docs.txt
 
-      - run: mkdocs gh-deploy --force
+      - name: Build and deploy documentation
+        run: mkdocs gh-deploy --force

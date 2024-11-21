@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "auditlog",
     "coral_credits.api",
+    'drf_spectacular',
 ]
 
 AUDITLOG_INCLUDE_ALL_MODELS = True
@@ -60,7 +61,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": 'Coral credits is a resource management system that helps build a \
         "coral reef style" fixed capacity cloud, cooperatively sharing community \
         resources through interfaces such as: Azimuth, OpenStack Blazar and Slurm.',
-    "VERSION": "0.1.0",
+    "VERSION": "0.3.5",
     "SERVE_INCLUDE_SCHEMA": False,
     # OTHER SETTINGS
 }
