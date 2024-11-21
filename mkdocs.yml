@@ -7,7 +7,7 @@ nav:
   - Home: index.md
   - Mission:
       - mission/index.md
-  - API Reference: docs/api.md
+  - API Reference: api.md
 
 theme:
   name: readthedocs
