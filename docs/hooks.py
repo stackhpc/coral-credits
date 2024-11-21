@@ -14,11 +14,6 @@ def generate_schema(config, **kwargs):
             check=True
         )
 
-        if schema_path.exists():
-            print("Schema contents:")
-            with open(schema_path) as f:
-                print(f.read())
-                
     except subprocess.CalledProcessError as e:
         print(f"Error generating schema: {e}")
         return
