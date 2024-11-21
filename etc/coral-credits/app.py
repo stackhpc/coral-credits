@@ -32,7 +32,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "auditlog",
     "coral_credits.api",
-    "drf_spectacular",
 ]
 
 AUDITLOG_INCLUDE_ALL_MODELS = True
