@@ -61,7 +61,6 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         return _http_200_ok(serializer.data)
 
     def _validate_request(self, request):
-
         resource_allocations = serializers.ResourceRequestSerializer(data=request.data)
 
         resource_allocations.is_valid(raise_exception=True)
@@ -243,6 +242,9 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             allocation_hours = db_utils.get_credit_allocation_resources(
                 credit_allocations, resource_requests.keys()
             )
+            db_utils.check_quota(
+                resource_provider_account, resource_requests, allocation_hours
+            )
             db_utils.check_credit_allocations(resource_requests, allocation_hours)
         except db_exceptions.ResourceRequestFormatError as e:
             # Incorrect resource request format
@@ -252,6 +254,9 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             return _http_403_forbidden(repr(e))
         except db_exceptions.NoCreditAllocation as e:
             # No credit for resource class
+            return _http_403_forbidden(repr(e))
+        except db_exceptions.QuotaExceeded as e:
+            # Quota limit exceeded
             return _http_403_forbidden(repr(e))
 
         # Don't modify the database on a dry_run
