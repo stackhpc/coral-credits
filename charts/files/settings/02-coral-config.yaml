@@ -1,0 +1,5 @@
+CORAL_CONFIG:
+  QUOTA:
+    ENABLED: {{ .Values.config.quota.enabled | default false }}
+    LIMIT_PERIOD: {{ .Values.config.quota.limit_period | default "week" }}
+    USAGE_LIMIT: {{ .Values.config.quota.usage_limit | default 200 }}

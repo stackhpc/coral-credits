@@ -1,10 +1,15 @@
+from datetime import datetime
 import logging
 import uuid
 
+from django.conf import settings
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from coral_credits.api import db_exceptions, models
+from coral_credits.api.quota import QuotaPeriod
 
 LOG = logging.getLogger(__name__)
 
@@ -235,6 +240,139 @@ def calculate_delta_resource_hours(
     return requested_resource_hours
 
 
+def calculate_overlap_hours(
+    record_start, record_end, period_start, period_end, total_hours: float
+) -> float:
+    """Calculate the prorated hours for a record that overlaps with a period."""
+    # Convert dates to datetime for comparison
+    period_start_dt = make_aware(datetime.combine(period_start, datetime.min.time()))
+    period_end_dt = make_aware(datetime.combine(period_end, datetime.max.time()))
+
+    # Find the overlap
+    overlap_start = max(record_start, period_start_dt)
+    overlap_end = min(record_end, period_end_dt)
+
+    # Calculate the proportion of the record that falls within the period
+    record_duration = (record_end - record_start).total_seconds()
+    overlap_duration = (overlap_end - overlap_start).total_seconds()
+    overlap_proportion = overlap_duration / record_duration
+    LOG.info(
+        f"{overlap_proportion*100:.2f}% of {total_hours} included in quota period."
+    )
+    return overlap_proportion * total_hours
+
+
+def check_quota(resource_provider_account, resource_requests, allocation_hours):
+    """Checks if resource requests would exceed quota limits for the period.
+
+    Only enforces quota on the ResourceProviderAccount, not the CreditAccount.
+
+    Returns True if the request is valid, raises exception otherwise.
+
+    Args:
+        resource_requests: Dictionary mapping ResourceClass to requested hours
+        allocation_hours: Dictionary mapping ResourceClass to CreditAllocationResource
+
+    Raises:
+        QuotaExceeded: If the request would exceed quota limits
+    """
+    try:
+        quota_enabled = settings.CORAL_CONFIG["QUOTA"]["ENABLED"]
+    except Exception:
+        quota_enabled = False
+    if not quota_enabled:
+        LOG.info("No quota rules set, skipping quota check.")
+        return True
+
+    period = QuotaPeriod.from_string(settings.CORAL_CONFIG["QUOTA"]["LIMIT_PERIOD"])
+    usage_limit = (
+        settings.CORAL_CONFIG["QUOTA"]["USAGE_LIMIT"] / 100
+    )  # Convert percentage to decimal
+
+    # Get period bounds
+    start_date, end_date, period_days = period.get_bounds_and_days()
+
+    LOG.info(
+        f"Quota period is from {start_date} to {end_date}. Total days: {period_days}."
+    )
+
+    for resource_class, requested_hours in resource_requests.items():
+        credit_allocation_resource = allocation_hours[resource_class]
+        credit_allocation_duration = (
+            credit_allocation_resource.allocation.end
+            - credit_allocation_resource.allocation.start
+        ).days + 1
+
+        LOG.info(
+            f"Initial credit allocation for {resource_class} : "
+            f"{credit_allocation_resource.original_resource_hours} hours "
+            f"over {credit_allocation_duration} days"
+        )
+        # Calculate daily average allowed from total allocation
+        daily_avg = (
+            credit_allocation_resource.original_resource_hours
+            / credit_allocation_duration
+        )
+
+        LOG.info(
+            f"daily average of {daily_avg} hours is calculated for {resource_class}."
+        )
+        # Calculate maximum allowed for this period
+        period_max = daily_avg * period_days * usage_limit
+        LOG.info(f"Quota allowance for the period is {period_max} hours.")
+
+        # Get current usage in this period
+
+        # Get all records that land within the period.
+        consumption_records = models.ResourceConsumptionRecord.objects.filter(
+            consumer__resource_provider_account=resource_provider_account,
+            resource_class=resource_class,
+            consumer__start__lte=end_date,
+            consumer__end__gte=start_date,
+        ).values("resource_hours", "consumer__start", "consumer__end")
+
+        sum = next(iter(consumption_records.aggregate(Sum("resource_hours")).values()))
+        LOG.info(f"Existing consumption during quota period: {sum}")
+        # We need to discount any partial hours from records that land outside the quota
+        # period. E.g. period is 10/10 to 17/10, but we have a record from 8/10 to 12/10
+        # We only want to count the hours in 10/10 - 12/10, not 8/10 - 10/10.
+        # Calculate prorated usage:
+        current_usage = 0.0
+        for record in consumption_records:
+            prorated_hours = calculate_overlap_hours(
+                record["consumer__start"],
+                record["consumer__end"],
+                start_date,
+                end_date,
+                record["resource_hours"],
+            )
+            current_usage += prorated_hours
+
+        LOG.info(
+            f"Resource Provider Account {resource_provider_account} has used "
+            f"{current_usage:.2f} hours for resource class {resource_class} over "
+            "the quota period."
+        )
+
+        # Check if new request would exceed quota
+        if current_usage + requested_hours > period_max:
+            raise db_exceptions.QuotaExceeded(
+                f"Request would exceed {period.value} quota for {resource_class.name}. "
+                f"Current usage: {current_usage:.2f} hours, "
+                f"Requested: {requested_hours:.2f} hours, "
+                f"Maximum allowed: {period_max:.2f} hours "
+                f"(Daily avg: {daily_avg:.2f} × "
+                f"Period days: {period_days} × "
+                f"Usage limit: {usage_limit*100}%)"
+            )
+        LOG.info(
+            f"Request would use an additional {requested_hours} hours of {period_max} "
+            f"for a total of {((requested_hours + (sum or 0)) / period_max) * 100:.2f}%"
+            " of quota limit."
+        )
+    return True
+
+
 def check_credit_allocations(resource_requests, credit_allocations):
     """Subtracts resources requested from credit allocations.
 
@@ -264,7 +402,6 @@ def check_credit_balance(credit_allocations, resource_requests):
         credit_allocations, resource_requests.keys()
     )
     for allocation in credit_allocation_resources.values():
-
         if allocation.resource_hours < 0:
             # We raise an exception so the rollback is handled
             raise db_exceptions.InsufficientCredits(

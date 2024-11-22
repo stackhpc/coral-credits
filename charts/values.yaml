@@ -143,3 +143,17 @@ affinity: {}
 
 # Tolerations for pods
 tolerations: []
+
+
+# Coral credits configuration
+config:
+  # Credit user quota settings
+  quota:
+    # Whether to enable quota limits. Default is false.
+    enabled:
+    # The time period over which quota should be enforced (week, month). Default is week.
+    limit_period:
+    # Quota is calculated as daily_average*usage_limit*limit_period.
+    # daily_average is calculated as the amount of resource per day for a given allocation.
+    # The daily quota in %. Default is 200.
+    usage_limit:

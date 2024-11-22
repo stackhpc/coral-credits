@@ -14,6 +14,7 @@ import coral_credits.api.models as models
 def pytest_configure(config):
     config.LEASE_NAME = "my_new_lease"
     config.LEASE_ID = "e96b5a17-ada0-4034-a5ea-34db024b8e04"
+    config.ALT_LEASE_ID = "f3a8d076-5b2d-4608-9d2e-0ff72eaa3496"
     config.PROJECT_ID = "20354d7a-e4fe-47af-8ff6-187bca92f3f9"
     config.USER_REF = "caa8b54a-eb5e-4134-8ae2-a3946a428ec7"
     config.START_DATE = make_aware(datetime.now())
@@ -21,6 +22,21 @@ def pytest_configure(config):
     config.END_EARLY_DATE = config.START_DATE + timedelta(days=0.75)
     config.END_LATE_DATE = config.START_DATE + timedelta(days=1.5)
     config.START_EARLY_DATE = config.START_DATE + timedelta(days=-0.75)
+
+    # Setting quota period to be a week containing the test dates
+    config.PERIOD_START = (
+        config.START_DATE - timedelta(days=config.START_DATE.weekday())
+    ).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )  # Monday
+    config.PERIOD_END = config.PERIOD_START + timedelta(days=6)  # Sunday
+
+
+@pytest.fixture()
+def use_quota_settings(settings):
+    settings.CORAL_CONFIG = {
+        "QUOTA": {"ENABLED": True, "LIMIT_PERIOD": "week", "USAGE_LIMIT": 200}
+    }
 
 
 # Get auth token
@@ -62,22 +78,16 @@ def resource_provider_account(request, account, provider):
 
 @pytest.fixture
 def credit_allocation(account, request):
-    return models.CreditAllocation.objects.create(
-        account=account,
-        name="test",
-        start=request.config.START_DATE,
-        end=request.config.END_DATE,
-    )
+    # Factory fixture
+    def _credit_allocation(start_date=None, end_date=None):
+        return models.CreditAllocation.objects.create(
+            account=account,
+            name="test",
+            start=start_date or request.config.START_DATE,
+            end=end_date or request.config.END_DATE,
+        )
 
-
-@pytest.fixture
-def early_credit_allocation(account, request):
-    return models.CreditAllocation.objects.create(
-        account=account,
-        name="test",
-        start=request.config.START_EARLY_DATE,
-        end=request.config.END_DATE,
-    )
+    return _credit_allocation
 
 
 @pytest.fixture
@@ -276,6 +286,70 @@ def virtual_request_data(base_request_data):
         },
     }
     return deep_merge(base_request_data, virtual_request_data)
+
+
+@pytest.fixture
+def existing_front_heavy_request(flavor_request_data, request):
+    """Existing reservation that uses most of quota at period start"""
+    front_heavy_request_data = {
+        "lease": {
+            "name": "existing-front-heavy",
+            "start_date": (request.config.PERIOD_START - timedelta(days=1)).isoformat(),
+            "end_date": (request.config.PERIOD_START + timedelta(days=2)).isoformat(),
+        }
+    }
+    return deep_merge(flavor_request_data, front_heavy_request_data)
+
+
+@pytest.fixture
+def existing_front_light_request(flavor_request_data, request):
+    """Existing reservation that uses little quota at period start"""
+    front_light_request_data = {
+        "lease": {
+            "id": request.config.ALT_LEASE_ID,
+            "name": "existing-front-light",
+            "start_date": (request.config.PERIOD_START - timedelta(days=1)).isoformat(),
+            "end_date": (request.config.PERIOD_START + timedelta(days=2)).isoformat(),
+            "resource_requests": {
+                "DISK_GB": 10,
+                "MEMORY_MB": 100,
+                "VCPU": 1,
+            },
+        }
+    }
+    return deep_merge(flavor_request_data, front_light_request_data)
+
+
+@pytest.fixture
+def existing_back_heavy_request(flavor_request_data, request):
+    """Existing reservation that uses most of quota at period end"""
+    back_heavy_request_data = {
+        "lease": {
+            "name": "existing-back-heavy",
+            "start_date": (request.config.PERIOD_END - timedelta(days=2)).isoformat(),
+            "end_date": (request.config.PERIOD_END + timedelta(days=1)).isoformat(),
+        }
+    }
+    return deep_merge(flavor_request_data, back_heavy_request_data)
+
+
+@pytest.fixture
+def existing_back_light_request(flavor_request_data, request):
+    """Existing reservation that uses little quota at period end"""
+    back_light_request_data = {
+        "lease": {
+            "id": request.config.ALT_LEASE_ID,
+            "name": "existing-back-light",
+            "start_date": (request.config.PERIOD_END - timedelta(days=2)).isoformat(),
+            "end_date": (request.config.PERIOD_END + timedelta(days=1)).isoformat(),
+            "resource_requests": {
+                "DISK_GB": 10,
+                "MEMORY_MB": 100,
+                "VCPU": 1,
+            },
+        }
+    }
+    return deep_merge(flavor_request_data, back_light_request_data)
 
 
 def deep_merge(defaults, overrides=None):
