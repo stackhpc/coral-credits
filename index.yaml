@@ -3,9 +3,9 @@ entries:
   coral-credits:
   - apiVersion: v2
     appVersion: cc272b2
-    created: "2025-02-10T16:15:38.270124297Z"
+    created: "2025-02-10T16:17:49.231520206Z"
     description: Helm chart for deploying the Coral Credits API.
-    digest: 523621373f18eb6c8db4ead12e369442a8bcca5cabcd693dc46b4cb860139ab9
+    digest: 64667b28defcc2f654a9f7833b534ea87cb2329c17f42d05751fac9b41e8f7f3
     name: coral-credits
     type: application
     urls:
@@ -13,7 +13,7 @@ entries:
     version: 0.3.6
   - apiVersion: v2
     appVersion: 09f4360
-    created: "2025-02-10T16:15:38.269591351Z"
+    created: "2025-02-10T16:17:49.231010055Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 3e50853c79b2881dd9e7d71ac71a96e48abeecb74cf691abe4d35a0e3af97bb0
     name: coral-credits
@@ -23,7 +23,7 @@ entries:
     version: 0.3.6-dev.0.main.3
   - apiVersion: v2
     appVersion: 677f0c3
-    created: "2025-02-10T16:15:38.269027687Z"
+    created: "2025-02-10T16:17:49.230462285Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 8ccca9f29c001496d52a8777d5f4f919403466830d75d450bfb4dcc61ed0503b
     name: coral-credits
@@ -33,7 +33,7 @@ entries:
     version: 0.3.6-dev.0.fix-helm-repo.5
   - apiVersion: v2
     appVersion: 80de4cb
-    created: "2025-02-10T16:15:38.2684737Z"
+    created: "2025-02-10T16:17:49.229910157Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4623cc4cbbdc7124f433f977e8a4195f19b57bdecc7ed264a26ac503ea7b2b8a
     name: coral-credits
@@ -41,4 +41,4 @@ entries:
     urls:
     - coral-credits-0.3.6-dev.0.add-calendar-limit.9.tgz
     version: 0.3.6-dev.0.add-calendar-limit.9
-generated: "2025-02-10T16:15:38.267671691Z"
+generated: "2025-02-10T16:17:49.229168194Z"
