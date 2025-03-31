@@ -14,11 +14,11 @@ into your Blazar configuration:
 [enforcement]
 enabled_filters = ExternalServiceFilter
 external_service_bearer_token = <token goes here>
-external_service_check_create_endpoint = https://coral.<azimuth_url>/consumer/check-create/
-external_service_commit_create_endpoint = https://coral.<azimuth_url>/consumer/create/
-external_service_check_update_endpoint = https://coral.<azimuth_url>/consumer/check-update/
-external_service_commit_update_endpoint = https://coral.<azimuth_url>/consumer/update/
-external_service_on_end_endpoint = https://coral.<azimuth_url>/consumer/on-end/
+external_service_check_create_endpoint = https://credits.<azimuth_url>/consumer/check-create/
+external_service_commit_create_endpoint = https://credits.<azimuth_url>/consumer/create/
+external_service_check_update_endpoint = https://credits.<azimuth_url>/consumer/check-update/
+external_service_commit_update_endpoint = https://credits.<azimuth_url>/consumer/update/
+external_service_on_end_endpoint = https://credits.<azimuth_url>/consumer/on-end/
 ```
 
 To generate the service bearer token do something
@@ -26,7 +26,7 @@ like this:
 ```
 CONTENT_TYPE="Content-Type: application/json"
 TEST_PASSWORD=<password>
-SITE_URL="https://coral.<azimuth_url>"
+SITE_URL="https://credits.<azimuth_url>"
 
 TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     "{
