@@ -3,7 +3,7 @@ entries:
   coral-credits:
   - apiVersion: v2
     appVersion: b490400
-    created: "2025-03-31T15:48:36.772437391Z"
+    created: "2025-04-10T14:21:57.650579948Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: f47e0755c2c23a5890eb0eb7e023c1ddde1a6ef981b543aac66cfe62ca7f18bd
     name: coral-credits
@@ -12,8 +12,18 @@ entries:
     - coral-credits-0.3.7-dev.0.fix-update-docs-for-azimuth.2.tgz
     version: 0.3.7-dev.0.fix-update-docs-for-azimuth.2
   - apiVersion: v2
+    appVersion: 84344db
+    created: "2025-04-10T14:21:57.649640112Z"
+    description: Helm chart for deploying the Coral Credits API.
+    digest: b59ce8977b3b27da730bfbac110d057fa36554f44c617f2382e0e9e96d56a996
+    name: coral-credits
+    type: application
+    urls:
+    - coral-credits-0.3.7-dev.0.docs-functional-test-consumer-create.2.tgz
+    version: 0.3.7-dev.0.docs-functional-test-consumer-create.2
+  - apiVersion: v2
     appVersion: cc272b2
-    created: "2025-03-31T15:48:36.771853437Z"
+    created: "2025-04-10T14:21:57.648614896Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 64667b28defcc2f654a9f7833b534ea87cb2329c17f42d05751fac9b41e8f7f3
     name: coral-credits
@@ -23,7 +33,7 @@ entries:
     version: 0.3.6
   - apiVersion: v2
     appVersion: 09f4360
-    created: "2025-03-31T15:48:36.771334023Z"
+    created: "2025-04-10T14:21:57.647606101Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 3e50853c79b2881dd9e7d71ac71a96e48abeecb74cf691abe4d35a0e3af97bb0
     name: coral-credits
@@ -33,7 +43,7 @@ entries:
     version: 0.3.6-dev.0.main.3
   - apiVersion: v2
     appVersion: 677f0c3
-    created: "2025-03-31T15:48:36.77078763Z"
+    created: "2025-04-10T14:21:57.646543024Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 8ccca9f29c001496d52a8777d5f4f919403466830d75d450bfb4dcc61ed0503b
     name: coral-credits
@@ -43,7 +53,7 @@ entries:
     version: 0.3.6-dev.0.fix-helm-repo.5
   - apiVersion: v2
     appVersion: 80de4cb
-    created: "2025-03-31T15:48:36.770198085Z"
+    created: "2025-04-10T14:21:57.645332882Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4623cc4cbbdc7124f433f977e8a4195f19b57bdecc7ed264a26ac503ea7b2b8a
     name: coral-credits
@@ -51,4 +61,4 @@ entries:
     urls:
     - coral-credits-0.3.6-dev.0.add-calendar-limit.9.tgz
     version: 0.3.6-dev.0.add-calendar-limit.9
-generated: "2025-03-31T15:48:36.769452989Z"
+generated: "2025-04-10T14:21:57.643420358Z"
