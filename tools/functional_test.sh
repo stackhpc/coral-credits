@@ -199,7 +199,9 @@ curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
     }" \
     http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
 
-# 7. Do a consumer create
+# 7. Do a consumer create (this request mimics what Blazar sends to its 
+#    [enforcement].external_service_commit_create_endpoint when creating
+#    a lease)
 echo "Creating a consumer:"
 RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d "{
         \"context\": {
