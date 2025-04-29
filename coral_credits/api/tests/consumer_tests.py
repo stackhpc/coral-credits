@@ -77,7 +77,7 @@ def test_flavor_create_request(
 ):
     # Allocate resource credit
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     # Create
@@ -129,7 +129,7 @@ def test_flavor_delete_upcoming_request(
 ):
     # Allocate resource credit
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     # Create
@@ -169,7 +169,7 @@ def test_flavor_delete_upcoming_request(
 @pytest.mark.django_db
 def test_flavor_delete_current_request(
     resource_classes,
-    early_credit_allocation,
+    credit_allocation,
     create_credit_allocation_resources,
     resource_provider_account,
     api_client,
@@ -179,7 +179,11 @@ def test_flavor_delete_current_request(
 ):
     # Allocate resource credit
     create_credit_allocation_resources(
-        early_credit_allocation, resource_classes, allocation_hours
+        credit_allocation(
+            start_date=request.config.START_EARLY_DATE, end_date=request.config.END_DATE
+        ),
+        resource_classes,
+        allocation_hours,
     )
 
     # Create
@@ -240,7 +244,7 @@ def test_flavor_shorten_currently_active_request(
 ):
     # Allocate resource credit
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     # Create
@@ -299,7 +303,7 @@ def test_flavor_extend_currently_active_request(
 ):
     # Allocate resource credit
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     # Create
@@ -351,9 +355,8 @@ def test_insufficient_credits_create_request(
     request_data,
     allocation_hours,
 ):
-
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     consumer_create_request(api_client, request_data, status.HTTP_403_FORBIDDEN)
@@ -406,7 +409,7 @@ def test_invalid_duration_create_request(
     allocation_hours,
 ):
     create_credit_allocation_resources(
-        credit_allocation, resource_classes, allocation_hours
+        credit_allocation(), resource_classes, allocation_hours
     )
 
     response = consumer_create_request(
@@ -414,3 +417,122 @@ def test_invalid_duration_create_request(
     )
 
     print(response.content)
+
+
+@pytest.mark.parametrize(
+    "allocation_hours,existing_request,new_request,expected_status",
+    [
+        # Front overlap with heavy existing usage (should fail)
+        (
+            {"VCPU": 96.0 * 7, "MEMORY_MB": 24000.0 * 7, "DISK_GB": 840.0 * 7},
+            lazy_fixture("existing_front_heavy_request"),
+            lazy_fixture("flavor_request_data"),
+            status.HTTP_403_FORBIDDEN,
+        ),
+        # Back overlap with heavy existing usage (should fail)
+        (
+            {"VCPU": 96.0 * 7, "MEMORY_MB": 24000.0 * 7, "DISK_GB": 840.0 * 7},
+            lazy_fixture("existing_back_heavy_request"),
+            lazy_fixture("flavor_request_data"),
+            status.HTTP_403_FORBIDDEN,
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_quota_check_fails_with_existing(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    existing_request,
+    new_request,
+    allocation_hours,
+    expected_status,
+    use_quota_settings,
+    request,  # contains pytest global vars
+):
+    """Test that new requests are rejected when existing usage is too high"""
+    # Setup initial allocation
+    create_credit_allocation_resources(
+        credit_allocation(
+            start_date=request.config.PERIOD_START, end_date=request.config.PERIOD_END
+        ),
+        resource_classes,
+        allocation_hours,
+    )
+
+    print(request.config.PERIOD_START)
+    print("REQUEST:", existing_request)
+
+    # Create existing reservation
+    consumer_create_request(api_client, existing_request, status.HTTP_204_NO_CONTENT)
+
+    # Try to create new reservation
+    consumer_create_request(api_client, new_request, expected_status)
+
+    # Verify only existing reservation exists
+    assert models.Consumer.objects.filter(
+        consumer_ref=existing_request["lease"]["name"]
+    ).exists()
+    assert not models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).exists()
+
+
+@pytest.mark.parametrize(
+    "allocation_hours,existing_request,new_request,expected_status",
+    [
+        # Front overlap with light existing usage (should succeed)
+        (
+            {"VCPU": 96.0 * 7, "MEMORY_MB": 24000.0 * 7, "DISK_GB": 840.0 * 7},
+            lazy_fixture("existing_front_light_request"),
+            lazy_fixture("flavor_request_data"),
+            status.HTTP_204_NO_CONTENT,
+        ),
+        # Back overlap with light existing usage (should succeed)
+        (
+            {"VCPU": 96.0 * 7, "MEMORY_MB": 24000.0 * 7, "DISK_GB": 840.0 * 7},
+            lazy_fixture("existing_back_light_request"),
+            lazy_fixture("flavor_request_data"),
+            status.HTTP_204_NO_CONTENT,
+        ),
+    ],
+)
+@pytest.mark.django_db
+def test_quota_check_succeeds_with_existing(
+    resource_classes,
+    credit_allocation,
+    create_credit_allocation_resources,
+    resource_provider_account,
+    api_client,
+    existing_request,
+    new_request,
+    allocation_hours,
+    expected_status,
+    use_quota_settings,
+    request,
+):
+    """Test that new requests are accepted when existing usage is low enough"""
+    # Setup initial allocation
+    create_credit_allocation_resources(
+        credit_allocation(
+            start_date=request.config.PERIOD_START, end_date=request.config.PERIOD_END
+        ),
+        resource_classes,
+        allocation_hours,
+    )
+
+    # Create existing reservation
+    consumer_create_request(api_client, existing_request, status.HTTP_204_NO_CONTENT)
+
+    # Try to create new reservation
+    consumer_create_request(api_client, new_request, expected_status)
+
+    # Verify both reservations exist
+    assert models.Consumer.objects.filter(
+        consumer_ref=existing_request["lease"]["name"]
+    ).exists()
+    assert models.Consumer.objects.filter(
+        consumer_ref=request.config.LEASE_NAME
+    ).exists()
