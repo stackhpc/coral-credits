@@ -16,7 +16,7 @@ RUN pip install --requirement /coral-credits/requirements.txt
 # Django fails to load templates if this is installed the "regular" way
 # If we use an editable mode install then it works
 COPY . /coral-credits
-RUN pip install --no-deps -e /coral-credits
+RUN pip install -e /coral-credits
 
 #
 # Now the image we run with
