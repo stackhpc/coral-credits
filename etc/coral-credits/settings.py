@@ -16,3 +16,5 @@ include(base_dir / "defaults.py")
 include(base_dir / "app.py")
 # Then include the runtime settings from a directory
 include_dir(base_dir / "settings.d")
+# Always include the whitenoise settings to configure static files
+include(base_dir / "whitenoise.py")
