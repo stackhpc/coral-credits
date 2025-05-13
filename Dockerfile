@@ -1,4 +1,4 @@
-FROM ubuntu:jammy as build-image
+FROM ubuntu:jammy AS build-image
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -21,7 +21,7 @@ RUN pip install -e /coral-credits
 #
 # Now the image we run with
 #
-FROM ubuntu:jammy as run-image
+FROM ubuntu:jammy AS run-image
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -36,10 +36,10 @@ ENV PATH="/venv/bin:$PATH"
 COPY --from=build-image /coral-credits /coral-credits
 
 # Create the user that will be used to run the app
-ENV APP_UID 1001
-ENV APP_GID 1001
-ENV APP_USER app
-ENV APP_GROUP app
+ENV APP_UID=1001
+ENV APP_GID=1001
+ENV APP_USER=app
+ENV APP_GROUP=app
 RUN groupadd --gid $APP_GID $APP_GROUP && \
     useradd \
       --no-create-home \
@@ -50,11 +50,11 @@ RUN groupadd --gid $APP_GID $APP_GROUP && \
       $APP_USER
 
 # Don't buffer stdout and stderr as it breaks realtime logging
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 # Install application configuration using flexi-settings
-ENV DJANGO_SETTINGS_MODULE flexi_settings.settings
-ENV DJANGO_FLEXI_SETTINGS_ROOT /etc/coral-credits/settings.py
+ENV DJANGO_SETTINGS_MODULE=flexi_settings.settings
+ENV DJANGO_FLEXI_SETTINGS_ROOT=/etc/coral-credits/settings.py
 COPY ./etc/ /etc/
 RUN mkdir -p /etc/coral-credits/settings.d
 
