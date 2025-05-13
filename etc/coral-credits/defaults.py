@@ -116,11 +116,10 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
-STATIC_URL = "static/"
+# Make sure to include the WSGI script name in the static URL
+STATIC_URL = "{}/static/".format(os.environ.get("SCRIPT_NAME", ""))
+STATIC_ROOT = "/var/coral/staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -58,6 +58,9 @@ ENV DJANGO_FLEXI_SETTINGS_ROOT /etc/coral-credits/settings.py
 COPY ./etc/ /etc/
 RUN mkdir -p /etc/coral-credits/settings.d
 
+# Collect the static files
+RUN /venv/bin/django-admin collectstatic
+
 # By default, serve the app on port 8080 using the app user
 EXPOSE 8080
 USER $APP_UID
