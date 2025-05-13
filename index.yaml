@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   coral-credits:
   - apiVersion: v2
+    appVersion: 97d08e9
+    created: "2025-05-13T16:51:04.973107692Z"
+    description: Helm chart for deploying the Coral Credits API.
+    digest: 5788cab3dc0a54aefd6cae496be1d96f0f36eaf14bf6f8741e8fd998909f5332
+    name: coral-credits
+    type: application
+    urls:
+    - coral-credits-0.3.7.tgz
+    version: 0.3.7
+  - apiVersion: v2
     appVersion: 40f1942
-    created: "2025-05-13T15:58:55.432643267Z"
+    created: "2025-05-13T16:51:04.972587683Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4bcf44c928ac9bb9f3f29404fa1c2bb7fda77bd4045b24195f48c3f9694be33e
     name: coral-credits
@@ -13,7 +23,7 @@ entries:
     version: 0.3.7-dev.0.main.4
   - apiVersion: v2
     appVersion: b490400
-    created: "2025-05-13T15:58:55.431439263Z"
+    created: "2025-05-13T16:51:04.97207688Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: f47e0755c2c23a5890eb0eb7e023c1ddde1a6ef981b543aac66cfe62ca7f18bd
     name: coral-credits
@@ -23,7 +33,7 @@ entries:
     version: 0.3.7-dev.0.fix-update-docs-for-azimuth.2
   - apiVersion: v2
     appVersion: 991b885
-    created: "2025-05-13T15:58:55.43040619Z"
+    created: "2025-05-13T16:51:04.970994613Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 2fcfdb8db67a8bd06c08559ff3c057aa0d04ac16bf820db9420989893032a2ea
     name: coral-credits
@@ -33,7 +43,7 @@ entries:
     version: 0.3.7-dev.0.fix-admin-panel-tls.11
   - apiVersion: v2
     appVersion: 524101a
-    created: "2025-05-13T15:58:55.429891697Z"
+    created: "2025-05-13T16:51:04.970475786Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: b564596cc8af8eab50573a170e8384faaad48b094f24c4d03722122217ebb893
     name: coral-credits
@@ -43,7 +53,7 @@ entries:
     version: 0.3.7-dev.0.fix-admin-panel-tls.10
   - apiVersion: v2
     appVersion: ff4a6d9
-    created: "2025-05-13T15:58:55.430936463Z"
+    created: "2025-05-13T16:51:04.971551932Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 6e794f08653f30042a3e30732607b47d727129fc33d2dd8db1e21adaa46cbefc
     name: coral-credits
@@ -53,7 +63,7 @@ entries:
     version: 0.3.7-dev.0.fix-admin-panel-tls.9
   - apiVersion: v2
     appVersion: 84344db
-    created: "2025-05-13T15:58:55.429178781Z"
+    created: "2025-05-13T16:51:04.969946148Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: b59ce8977b3b27da730bfbac110d057fa36554f44c617f2382e0e9e96d56a996
     name: coral-credits
@@ -63,7 +73,7 @@ entries:
     version: 0.3.7-dev.0.docs-functional-test-consumer-create.2
   - apiVersion: v2
     appVersion: cc272b2
-    created: "2025-05-13T15:58:55.428652064Z"
+    created: "2025-05-13T16:51:04.969412213Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 64667b28defcc2f654a9f7833b534ea87cb2329c17f42d05751fac9b41e8f7f3
     name: coral-credits
@@ -73,7 +83,7 @@ entries:
     version: 0.3.6
   - apiVersion: v2
     appVersion: 09f4360
-    created: "2025-05-13T15:58:55.428124496Z"
+    created: "2025-05-13T16:51:04.968880101Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 3e50853c79b2881dd9e7d71ac71a96e48abeecb74cf691abe4d35a0e3af97bb0
     name: coral-credits
@@ -83,7 +93,7 @@ entries:
     version: 0.3.6-dev.0.main.3
   - apiVersion: v2
     appVersion: 677f0c3
-    created: "2025-05-13T15:58:55.427576047Z"
+    created: "2025-05-13T16:51:04.968354491Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 8ccca9f29c001496d52a8777d5f4f919403466830d75d450bfb4dcc61ed0503b
     name: coral-credits
@@ -93,7 +103,7 @@ entries:
     version: 0.3.6-dev.0.fix-helm-repo.5
   - apiVersion: v2
     appVersion: 80de4cb
-    created: "2025-05-13T15:58:55.427019283Z"
+    created: "2025-05-13T16:51:04.96777999Z"
     description: Helm chart for deploying the Coral Credits API.
     digest: 4623cc4cbbdc7124f433f977e8a4195f19b57bdecc7ed264a26ac503ea7b2b8a
     name: coral-credits
@@ -101,4 +111,4 @@ entries:
     urls:
     - coral-credits-0.3.6-dev.0.add-calendar-limit.9.tgz
     version: 0.3.6-dev.0.add-calendar-limit.9
-generated: "2025-05-13T15:58:55.426276639Z"
+generated: "2025-05-13T16:51:04.967050871Z"
