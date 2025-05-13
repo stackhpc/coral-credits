@@ -204,7 +204,9 @@ def test_flavor_delete_current_request(
         c = models.CreditAllocationResource.objects.filter(
             resource_class=resource_class.id
         ).first()
-        assert c.resource_hours == allocation_hours[resource_class.name] * 0.25
+        assert c.resource_hours == pytest.approx(
+            allocation_hours[resource_class.name] * 0.25
+        )
 
     # Check consumption records are correct
     for resource_class in resource_classes:
@@ -265,14 +267,18 @@ def test_flavor_shorten_currently_active_request(
         c = models.CreditAllocationResource.objects.filter(
             resource_class=resource_class.id
         ).first()
-        assert c.resource_hours == allocation_hours[resource_class.name] * 0.25
+        assert c.resource_hours == pytest.approx(
+            allocation_hours[resource_class.name] * 0.25
+        )
 
     # Check consumption records are correct
     for resource_class in resource_classes:
         rcr = models.ResourceConsumptionRecord.objects.get(
             consumer=new_consumer, resource_class=resource_class.id
         )
-        assert rcr.resource_hours == allocation_hours[resource_class.name] * 0.75
+        assert rcr.resource_hours == pytest.approx(
+            allocation_hours[resource_class.name] * 0.75
+        )
 
 
 @pytest.mark.parametrize(
