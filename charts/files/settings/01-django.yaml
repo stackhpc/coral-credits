@@ -1,5 +1,8 @@
 SECRET_KEY: {{ .Values.settings.secretKey | default (randAlphaNum 64) }}
 DEBUG: {{ .Values.settings.debug }}
+{{- if .Values.ingress.host }}
+CSRF_TRUSTED_ORIGINS: ["{{ ternary "https" "http" .Values.ingress.tls.enabled }}://{{ .Values.ingress.host }}"]
+{{- end }}
 DATABASES:
   default:
     ENGINE: {{ .Values.settings.database.engine | default "django.db.backends.sqlite3" }}
