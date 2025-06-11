@@ -46,7 +46,7 @@ class CreditAllocationResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CreditAllocationResource
-        fields = ["resource_class", "resource_hours"]
+        fields = ["id", "resource_class", "resource_hours"]
 
     def to_representation(self, instance):
         """Pass the context to the ResourceClassSerializer"""

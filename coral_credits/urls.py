@@ -24,20 +24,25 @@ from rest_framework_nested import routers
 
 from coral_credits.api import views
 
-router = routers.DefaultRouter()
+router = routers.DefaultRouter(trailing_slash=False)
 router.register(r"resource_class", views.ResourceClassViewSet)
+router.register(r"resource_class/", views.ResourceClassViewSet, basename="resourceclassslash")
 router.register(r"resource_provider", views.ResourceProviderViewSet)
+router.register(r"resource_provider/", views.ResourceProviderViewSet, basename="resourceproviderslash")
 router.register(r"resource_provider_account", views.ResourceProviderAccountViewSet)
+router.register(r"resource_provider_account/", views.ResourceProviderAccountViewSet, basename="resourceprovideraccountslash")
 router.register(r"allocation", views.CreditAllocationViewSet)
+router.register(r"allocation/", views.CreditAllocationViewSet, basename="allocationslash")
 router.register(r"account", views.AccountViewSet, basename="creditaccount")
+router.register(r"account/", views.AccountViewSet, basename="creditaccountslash")
 router.register(r"consumer", views.ConsumerViewSet, basename="resource-request")
+router.register(r"consumer/", views.ConsumerViewSet, basename="resource-requestslash")
 
 allocation_router = routers.NestedSimpleRouter(
-    router, r"allocation", lookup="allocation"
+    router, r"allocation", lookup="allocation", trailing_slash=False
 )
-allocation_router.register(
-    r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource"
-)
+allocation_router.register(r"resources", views.CreditAllocationResourceViewSet, basename="allocation-resource")
+allocation_router.register(r"resources/", views.CreditAllocationResourceViewSet, basename="allocation-resource-slash")
 
 
 def prometheus_metrics(request):

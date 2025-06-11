@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 class CreditAllocationViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAllocation.objects.all()
     serializer_class = serializers.CreditAllocationSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
@@ -58,7 +58,10 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
-        return _http_200_ok(serializer.data)
+        if len(serializer.data) == 1:
+          return Response(serializer.data[0], status=status.HTTP_201_CREATED)
+        else:
+          return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def _validate_request(self, request):
 
