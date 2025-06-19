@@ -114,12 +114,12 @@ class AccountViewSet(viewsets.ModelViewSet):
         )
 
         # TODO(johngarbutt) look for any during the above allocations
-        consumers_query = models.Consumer.objects.filter(account__pk=pk)
+        consumers_query = models.Consumer.objects.filter(resource_provider_account__account__pk=pk)
         consumers = serializers.Consumer(
             consumers_query, many=True, context={"request": request}
         )
 
-        account_summary["allocations"] = allocations.data
+        account_summary["allocations"] = allocations
         account_summary["consumers"] = consumers.data
 
         # add resource_hours_remaining... must be a better way!
