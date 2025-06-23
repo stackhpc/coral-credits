@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 # from django.db.models import Q
 
@@ -82,6 +84,7 @@ class CreditAllocationResource(models.Model):
         ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
     )
     resource_hours = models.FloatField()
+    original_resource_hours = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -96,6 +99,12 @@ class CreditAllocationResource(models.Model):
             f"{self.resource_hours} hours allocated for {self.resource_class} "
             f"from {self.allocation}"
         )
+
+
+@receiver(pre_save, sender=CreditAllocationResource)
+def set_original_hours(sender, instance, **kwargs):
+    if instance.pk is None:  # Only on creation
+        instance.original_resource_hours = instance.resource_hours
 
 
 class Consumer(models.Model):

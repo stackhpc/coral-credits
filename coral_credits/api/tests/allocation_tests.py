@@ -21,11 +21,9 @@ def test_credit_allocation_resource_create_success(
     api_client,
     request_data,
 ):
-
+    allocation = credit_allocation()
     # Prepare data for the API call
-    url = reverse(
-        "allocation-resource-list", kwargs={"allocation_pk": credit_allocation.id}
-    )
+    url = reverse("allocation-resource-list", kwargs={"allocation_pk": allocation.id})
 
     # Make the API call
     response = api_client.post(url, request_data, format="json", secure=True)
@@ -39,7 +37,5 @@ def test_credit_allocation_resource_create_success(
 
     # Check database entries are as expected
     # First check we have the number that we expect
-    total_cars = models.CreditAllocationResource.objects.filter(
-        allocation=credit_allocation
-    )
+    total_cars = models.CreditAllocationResource.objects.filter(allocation=allocation)
     assert len(total_cars) == len(request_data)

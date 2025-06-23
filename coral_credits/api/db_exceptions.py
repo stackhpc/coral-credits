@@ -20,3 +20,9 @@ class NoResourceClass(Exception):
     """Raised when there is no resource class matching the query"""
 
     pass
+
+
+class QuotaExceeded(Exception):
+    """Raised when a request would exceed a users quota"""
+
+    pass
