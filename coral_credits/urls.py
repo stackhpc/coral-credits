@@ -24,6 +24,8 @@ from rest_framework_nested import routers
 
 from coral_credits.api import views
 
+# setup to endpoints to support both with and without trailing slashes
+#
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r"resource_class", views.ResourceClassViewSet)
 router.register(r"resource_class/", views.ResourceClassViewSet, basename="resourceclassslash")

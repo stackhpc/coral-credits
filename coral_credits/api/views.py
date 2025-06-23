@@ -58,6 +58,10 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
+        # To allow for the allocation resource endpoint to operate as a single REST object
+        # with GET,POST,PATCH etc after creation of single item
+        # When creating with multiple resources a list of multiple entries is returned,
+        # each with their own unique ID
         if len(serializer.data) == 1:
           return Response(serializer.data[0], status=status.HTTP_201_CREATED)
         else:
@@ -108,6 +112,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         account_summary = serializer.data
 
         # TODO(johngarbutt) look for any during the above allocations
+
+        # ISSUE (stuartc) this creates errors if objects are actually found when the account entry
+        # is retrieved. Unable to serialise the list.
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
         allocations = serializers.CreditAllocationSerializer(
             all_allocations_query, many=True
@@ -119,7 +126,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             consumers_query, many=True, context={"request": request}
         )
 
-        account_summary["allocations"] = allocations
+        account_summary["allocations"] = allocations.data
         account_summary["consumers"] = consumers.data
 
         # add resource_hours_remaining... must be a better way!
