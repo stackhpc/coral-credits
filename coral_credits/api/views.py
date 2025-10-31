@@ -117,7 +117,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         # is retrieved. Unable to serialise the list.
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
         allocations = serializers.CreditAllocationSerializer(
-            all_allocations_query, many=True
+            all_allocations_query, many=True, context={"request": request}
         )
 
         # TODO(johngarbutt) look for any during the above allocations
@@ -129,9 +129,16 @@ class AccountViewSet(viewsets.ModelViewSet):
         account_summary["allocations"] = allocations.data
         account_summary["consumers"] = consumers.data
 
+        all_allocation_resources_query = models.CreditAllocationResource.objects.filter(allocation__account__pk=pk)
         # add resource_hours_remaining... must be a better way!
         # TODO(johngarbut) we don't check the dates line up!!
         for allocation in account_summary["allocations"]:
+            resources_for_allocation_query = all_allocation_resources_query.filter(allocation__id=allocation["id"])
+            resources_for_allocation = serializers.CreditAllocationResourceSerializer(
+                resources_for_allocation_query, many=True, context={"request": request}
+            )
+            allocation["resources"] = resources_for_allocation.data
+            print(allocation["resources"])
             for resource_allocation in allocation["resources"]:
                 if "resource_hours_remaining" not in resource_allocation:
                     resource_allocation["resource_hours_remaining"] = (
