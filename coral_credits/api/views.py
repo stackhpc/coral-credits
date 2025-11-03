@@ -27,7 +27,7 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CreditAllocationResourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, allocation_pk=None):
+    def _create_update_credit_allocations(self, request, allocation_pk):
         """Allocate credits to a dictionary of resource classes.
 
         Example Request:
@@ -66,6 +66,12 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
           return Response(serializer.data[0], status=status.HTTP_201_CREATED)
         else:
           return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def create(self, request, allocation_pk=None):
+        return self._create_update_credit_allocations(request,allocation_pk)
+    
+    def update(self, request, allocation_pk=None, pk=None):
+        return self._create_update_credit_allocations(request,allocation_pk)
 
     def _validate_request(self, request):
 
