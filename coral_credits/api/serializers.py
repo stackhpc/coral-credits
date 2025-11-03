@@ -73,12 +73,12 @@ class ResourceConsumptionRecord(serializers.ModelSerializer):
 
 
 class Consumer(serializers.ModelSerializer):
-    resource_provider = ResourceProviderSerializer()
+    resource_provider_account = ResourceProviderAccountSerializer()
     resources = ResourceConsumptionRecord(many=True)
 
     class Meta:
         model = models.Consumer
-        fields = ["consumer_ref", "resource_provider", "start", "end", "resources"]
+        fields = ["consumer_ref", "resource_provider_account", "start", "end", "resources"]
 
 
 class ResourceRequestSerializer(serializers.Serializer):

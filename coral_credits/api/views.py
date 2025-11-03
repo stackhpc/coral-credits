@@ -138,7 +138,6 @@ class AccountViewSet(viewsets.ModelViewSet):
                 resources_for_allocation_query, many=True, context={"request": request}
             )
             allocation["resources"] = resources_for_allocation.data
-            print(allocation["resources"])
             for resource_allocation in allocation["resources"]:
                 if "resource_hours_remaining" not in resource_allocation:
                     resource_allocation["resource_hours_remaining"] = (
