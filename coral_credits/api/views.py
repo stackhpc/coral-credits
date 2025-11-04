@@ -27,7 +27,9 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return models.CreditAllocationResource.objects.filter(allocation__pk=self.kwargs["allocation_pk"])
+        return models.CreditAllocationResource.objects.filter(
+            allocation__pk=self.kwargs["allocation_pk"]
+        )
 
     def _create_update_credit_allocations(self, request, allocation_pk):
         """Allocate credits to a dictionary of resource classes.
@@ -65,15 +67,15 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         # When creating with multiple resources a list of multiple entries is returned,
         # each with their own unique ID
         if len(serializer.data) == 1:
-          return Response(serializer.data[0], status=status.HTTP_201_CREATED)
+            return Response(serializer.data[0], status=status.HTTP_201_CREATED)
         else:
-          return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def create(self, request, allocation_pk=None):
-        return self._create_update_credit_allocations(request,allocation_pk)
-    
+        return self._create_update_credit_allocations(request, allocation_pk)
+
     def update(self, request, allocation_pk=None, pk=None):
-        return self._create_update_credit_allocations(request,allocation_pk)
+        return self._create_update_credit_allocations(request, allocation_pk)
 
     def _validate_request(self, request):
 
@@ -129,7 +131,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         )
 
         # TODO(johngarbutt) look for any during the above allocations
-        consumers_query = models.Consumer.objects.filter(resource_provider_account__account__pk=pk)
+        consumers_query = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=pk
+        )
         consumers = serializers.Consumer(
             consumers_query, many=True, context={"request": request}
         )
@@ -137,11 +141,15 @@ class AccountViewSet(viewsets.ModelViewSet):
         account_summary["allocations"] = allocations.data
         account_summary["consumers"] = consumers.data
 
-        all_allocation_resources_query = models.CreditAllocationResource.objects.filter(allocation__account__pk=pk)
+        all_allocation_resources_query = models.CreditAllocationResource.objects.filter(
+            allocation__account__pk=pk
+        )
         # add resource_hours_remaining... must be a better way!
         # TODO(johngarbut) we don't check the dates line up!!
         for allocation in account_summary["allocations"]:
-            resources_for_allocation_query = all_allocation_resources_query.filter(allocation__id=allocation["id"])
+            resources_for_allocation_query = all_allocation_resources_query.filter(
+                allocation__id=allocation["id"]
+            )
             resources_for_allocation = serializers.CreditAllocationResourceSerializer(
                 resources_for_allocation_query, many=True, context={"request": request}
             )

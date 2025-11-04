@@ -78,7 +78,13 @@ class Consumer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Consumer
-        fields = ["consumer_ref", "resource_provider_account", "start", "end", "resources"]
+        fields = [
+            "consumer_ref",
+            "resource_provider_account",
+            "start",
+            "end",
+            "resources",
+        ]
 
 
 class ResourceRequestSerializer(serializers.Serializer):
