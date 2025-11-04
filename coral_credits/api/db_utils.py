@@ -71,12 +71,13 @@ def get_all_active_reservations(resource_provider_account):
 
 def get_credit_allocation(id):
     now = timezone.now()
-    try:
-        credit_allocation = models.CreditAllocation.objects.filter(
-            id=id, start__lte=now, end__gte=now
+
+    credit_allocation = models.CreditAllocation.objects.filter(
+            id=id
         ).first()
-    except models.CreditAllocation.DoesNotExist:
+    if credit_allocation == None:
         raise db_exceptions.NoCreditAllocation("Invalid allocation_id")
+    
     return credit_allocation
 
 
