@@ -23,9 +23,11 @@ class CreditAllocationViewSet(viewsets.ModelViewSet):
 
 
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
-    queryset = models.CreditAllocationResource.objects.all()
     serializer_class = serializers.CreditAllocationResourceSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return models.CreditAllocationResource.objects.filter(allocation__pk=self.kwargs["allocation_pk"])
 
     def _create_update_credit_allocations(self, request, allocation_pk):
         """Allocate credits to a dictionary of resource classes.
