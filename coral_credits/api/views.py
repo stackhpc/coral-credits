@@ -178,6 +178,16 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ConsumerRequestSerializer
 
+    # TODO: need to split the Consumer and ConsumerRequest logic really
+    def retrieve(self, request, pk=None):
+        consumer = get_object_or_404(self.queryset, pk=pk)
+        serializer = serializers.Consumer(consumer, context={'request': request})
+        return Response(serializer.data)
+    
+    def list(self, request):
+        serializer = serializers.Consumer(self.queryset, many=True, context={'request': request})
+        return Response(serializer.data)
+
     @action(detail=False, methods=["post"], url_path="create")
     def create_consumer(self, request):
         LOG.info(f"About to process create commit:\n{request.data}")
