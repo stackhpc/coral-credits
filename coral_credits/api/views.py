@@ -21,6 +21,18 @@ class CreditAllocationViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CreditAllocationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def destroy(self, request, pk=None):
+        allocation = get_object_or_404(self.queryset, pk=pk)
+        active_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=allocation.account.pk
+        )
+        current_time = make_aware(datetime.now())
+        for consumer in active_consumers:
+            if current_time < consumer.end:
+                return _http_403_forbidden(repr(db_exceptions.ActiveConsumersInAllocation))
+        else:
+            return super().destroy(request)
+
 
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CreditAllocationResourceSerializer

@@ -20,3 +20,8 @@ class NoResourceClass(Exception):
     """Raised when there is no resource class matching the query"""
 
     pass
+
+class ActiveConsumersInAllocation(Exception):
+    """Raised when trying to delete an allocation with active consumers"""
+
+    pass

@@ -101,8 +101,10 @@ class CreditAllocationResource(models.Model):
 class Consumer(models.Model):
     consumer_ref = models.CharField(max_length=200)
     consumer_uuid = models.UUIDField()
+    # Should protect against deletion with on_delete=models.DO_NOTHING but means can't
+    # delete accounts with expired consumers so protected against in API instead
     resource_provider_account = models.ForeignKey(
-        ResourceProviderAccount, on_delete=models.DO_NOTHING
+        ResourceProviderAccount, on_delete=models.CASCADE
     )
     user_ref = models.UUIDField()
     created = models.DateTimeField(auto_now_add=True)
