@@ -45,13 +45,13 @@ lease_request_json = get_lease_request_json()
 @pytest.fixture(scope="session")
 def terraform_rest_setup():
     working_dir = os.path.join(os.path.dirname(__file__), "..")
-    var_file = os.path.join(working_dir, "example-config.tfvars")
+    var_file = os.path.join(working_dir, "tests", "tofu_configs", "initial.tfvars")
     
     tf = Tofu(cwd=working_dir)
     tf.init()
     tf.apply(extra_args=["--var-file="+var_file])
 
-    yield
+    yield tf
 
     destroy = tf.apply(extra_args=["--var-file="+var_file],destroy=True)
     assert len(destroy.errors) == 0
@@ -66,7 +66,7 @@ def add_consumer_request(terraform_rest_setup):
         },
         json=lease_request_json
     )
-    yield consumer.status_code
+    yield dict(status = consumer.status_code, tf_workspace = terraform_rest_setup)
     requests.post(coral_uri+"/consumer/on-end",headers={
             "Authorization": "Bearer "+os.environ.get("TF_VAR_auth_token"),
             "Content-Type": "application/json"
@@ -74,7 +74,12 @@ def add_consumer_request(terraform_rest_setup):
         json=lease_request_json
     )
 
-# def test_allocation_resources_still_consumed_by_deleted_consumers
+@pytest.fixture(scope="session")
+def try_delete_active_allocation(add_consumer_request):
+    delete_file = os.path.join(os.path.dirname(__file__), "..", "tests", "tofu_configs", "delete-active.tfvars")
+    try_delete = add_consumer_request["tf_workspace"].apply(extra_args=["--var-file="+delete_file])
+    return len(try_delete.errors)
+
 
 def api_get_request(resource):
     return requests.get(coral_uri+"/"+resource,headers=headers).json()
@@ -156,8 +161,24 @@ def test_resource_allocations_created(terraform_rest_setup):
     assert allocation_resources["Q1-1"] == {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000}
     assert allocation_resources["Q2-0"] == {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000}
 
+def test_resources_consumed_by_consumers(add_consumer_request):
+    raise NotImplementedError()
+
+def test_resources_still_consumed_after_consumer_delete():
+    raise NotImplementedError()
+
 def test_consumer_added_or_exists(add_consumer_request):
-    assert add_consumer_request == 204
+    assert add_consumer_request["status"] == 204
 
 def test_can_query_consumer(add_consumer_request):
     assert len(api_get_request("consumer")) == 1
+
+def test_delete_allocation_with_consumer_forbidden(try_delete_active_allocation):
+    assert try_delete_active_allocation > 0
+
+def test_delete_active_allocation_resources_fails(try_delete_active_allocation):
+    allocations = api_get_request("allocation")
+    q1_allocations = [a for a in allocations if a["name"][:2] == "Q1"]
+    for alloc in q1_allocations:
+        tst = api_get_request("allocation/"+str(alloc["id"])+"/resources")
+        assert len(tst) == 3

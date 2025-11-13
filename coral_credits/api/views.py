@@ -15,6 +15,14 @@ from coral_credits.api import db_exceptions, db_utils, models, serializers
 
 LOG = logging.getLogger(__name__)
 
+def destroy_if_no_active_consumers(linked_consumers_queryset, request, destroy_super):
+    
+    current_time = make_aware(datetime.now())
+    for consumer in linked_consumers_queryset:
+        if current_time < consumer.end:
+            return _http_403_forbidden(repr(db_exceptions.ActiveConsumersInAllocation))
+    else:
+        return destroy_super.destroy(request)
 
 class CreditAllocationViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAllocation.objects.all()
@@ -23,15 +31,10 @@ class CreditAllocationViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None):
         allocation = get_object_or_404(self.queryset, pk=pk)
-        active_consumers = models.Consumer.objects.filter(
+        linked_consumers = models.Consumer.objects.filter(
             resource_provider_account__account__pk=allocation.account.pk
         )
-        current_time = make_aware(datetime.now())
-        for consumer in active_consumers:
-            if current_time < consumer.end:
-                return _http_403_forbidden(repr(db_exceptions.ActiveConsumersInAllocation))
-        else:
-            return super().destroy(request)
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
@@ -88,6 +91,13 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
 
     def update(self, request, allocation_pk=None, pk=None):
         return self._create_update_credit_allocations(request, allocation_pk)
+    
+    def destroy(self, request, allocation_pk=None, pk=None):
+        resource = get_object_or_404(self.get_queryset(), pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=resource.allocation.account.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
     def _validate_request(self, request):
 
@@ -111,11 +121,24 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ResourceProviderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def destroy(self, request, pk=None):
+        rpa = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__pk=rpa.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProviderAccount.objects.all()
     serializer_class = serializers.ResourceProviderAccountSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def destroy(self, request, pk=None):
+        provider = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__provider__pk=provider.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -183,6 +206,13 @@ class AccountViewSet(viewsets.ModelViewSet):
                             )
 
         return Response(account_summary)
+    
+    def destroy(self, request, pk=None):
+        account = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=account.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 
 class ConsumerViewSet(viewsets.ModelViewSet):
