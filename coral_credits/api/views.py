@@ -15,14 +15,16 @@ from coral_credits.api import db_exceptions, db_utils, models, serializers
 
 LOG = logging.getLogger(__name__)
 
+
 def destroy_if_no_active_consumers(linked_consumers_queryset, request, destroy_super):
-    
+
     current_time = make_aware(datetime.now())
     for consumer in linked_consumers_queryset:
         if current_time < consumer.end:
             return _http_403_forbidden(repr(db_exceptions.ActiveConsumersInAllocation))
     else:
         return destroy_super.destroy(request)
+
 
 class CreditAllocationViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAllocation.objects.all()
@@ -91,7 +93,7 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
 
     def update(self, request, allocation_pk=None, pk=None):
         return self._create_update_credit_allocations(request, allocation_pk)
-    
+
     def destroy(self, request, allocation_pk=None, pk=None):
         resource = get_object_or_404(self.get_queryset(), pk=pk)
         linked_consumers = models.Consumer.objects.filter(
@@ -127,6 +129,7 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
             resource_provider_account__pk=rpa.pk
         )
         return destroy_if_no_active_consumers(linked_consumers, request, super())
+
 
 class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProviderAccount.objects.all()
@@ -206,7 +209,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                             )
 
         return Response(account_summary)
-    
+
     def destroy(self, request, pk=None):
         account = get_object_or_404(self.queryset, pk=pk)
         linked_consumers = models.Consumer.objects.filter(
@@ -223,11 +226,13 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     # TODO: need to split the Consumer and ConsumerRequest logic really
     def retrieve(self, request, pk=None):
         consumer = get_object_or_404(self.queryset, pk=pk)
-        serializer = serializers.Consumer(consumer, context={'request': request})
+        serializer = serializers.Consumer(consumer, context={"request": request})
         return Response(serializer.data)
-    
+
     def list(self, request):
-        serializer = serializers.Consumer(self.queryset, many=True, context={'request': request})
+        serializer = serializers.Consumer(
+            self.queryset, many=True, context={"request": request}
+        )
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"], url_path="create")

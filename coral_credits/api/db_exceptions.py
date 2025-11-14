@@ -21,6 +21,7 @@ class NoResourceClass(Exception):
 
     pass
 
+
 class ActiveConsumersInAllocation(Exception):
     """Raised when trying to delete an allocation with active consumers"""
 
