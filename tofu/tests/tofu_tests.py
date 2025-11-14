@@ -4,6 +4,7 @@ import requests
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import uuid
 
 coral_uri = os.environ.get("TF_VAR_coral_uri")
 headers = {"Authorization": "Bearer "+os.environ.get("TF_VAR_auth_token")}
@@ -19,7 +20,7 @@ def get_lease_request_json():
                 "region_name": "RegionOne"
             },
             "lease": {
-                "id": "e96b5a17-ada0-4034-a5ea-34db024b8e04",
+                "id": str(uuid.uuid4()),
                 "name": "my_new_lease",
                 "start_date": start_time,
                 "end_date": end_time,
@@ -46,6 +47,7 @@ lease_request_json = get_lease_request_json()
 def terraform_rest_setup():
     working_dir = os.path.join(os.path.dirname(__file__), "..")
     var_file = os.path.join(working_dir, "tests", "tofu_configs", "initial.tfvars")
+    delete_file = os.path.join(working_dir, "tests", "tofu_configs", "empty.tfvars")
     
     tf = Tofu(cwd=working_dir)
     tf.init()
@@ -53,7 +55,7 @@ def terraform_rest_setup():
 
     yield tf
 
-    destroy = tf.apply(extra_args=["--var-file="+var_file],destroy=True)
+    destroy = tf.apply(extra_args=["--var-file="+delete_file])
     assert len(destroy.errors) == 0
 
 @pytest.fixture(scope="session")
@@ -78,7 +80,17 @@ def add_consumer_request(terraform_rest_setup):
 def try_delete_active_allocation(add_consumer_request):
     delete_file = os.path.join(os.path.dirname(__file__), "..", "tests", "tofu_configs", "delete-active.tfvars")
     try_delete = add_consumer_request["tf_workspace"].apply(extra_args=["--var-file="+delete_file])
-    return len(try_delete.errors)
+    return dict(error_count = len(try_delete.errors),tf_workspace = add_consumer_request["tf_workspace"])
+
+@pytest.fixture(scope="session")
+def try_destroy_with_active_consumers(try_delete_active_allocation):
+    all_file = os.path.join(os.path.dirname(__file__), "..", "tests", "tofu_configs", "initial.tfvars")
+    delete_file = os.path.join(os.path.dirname(__file__), "..", "tests", "tofu_configs", "empty.tfvars")
+    try_delete = try_delete_active_allocation["tf_workspace"].apply(extra_args=["--var-file="+delete_file])
+    yield len(try_delete.errors)
+    # Undo any destroys
+    reapply = try_delete_active_allocation["tf_workspace"].apply(extra_args=["--var-file="+all_file])
+    assert len(reapply.errors) == 0
 
 
 def api_get_request(resource):
@@ -151,18 +163,39 @@ def test_only_allocation_resources_returned(terraform_rest_setup):
     allocation_id = api_get_request("allocation")[0]["id"]
     assert len(api_get_request("allocation/"+str(allocation_id)+"/resources")) == 3
 
-def test_resource_allocations_created(terraform_rest_setup):
+@pytest.mark.parametrize(
+    "fixture_name, expected_resources",
+    [
+        (
+            "terraform_rest_setup",
+            {
+                "Q1-0": {"VCPU": 40000, "MEMORY_MB": 4423680, "DISK_GB": 108000},
+                "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
+                "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
+            },
+        ),
+        (
+            "add_consumer_request",
+            {
+                # q1-0 = original - resource hours requested for a month by lease
+                "Q1-0": {"VCPU": 37120, "MEMORY_MB": 3703680, "DISK_GB": 82800},
+                "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
+                "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
+            },
+        ),
+    ],
+)
+def test_resource_allocations_have_correct_resources(request, fixture_name,expected_resources):
+    request.getfixturevalue(fixture_name) # needed to dynamically set fixtures
     allocations = api_get_request("allocation")
     allocation_resources = {
         a["name"]: to_resource_map(api_get_request("allocation/"+str(a["id"])+"/resources"))
         for a in allocations
     }
-    assert allocation_resources["Q1-0"] == {"VCPU": 40000, "MEMORY_MB": 4423680, "DISK_GB": 108000}
-    assert allocation_resources["Q1-1"] == {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000}
-    assert allocation_resources["Q2-0"] == {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000}
+    assert allocation_resources["Q1-0"] == expected_resources["Q1-0"]
+    assert allocation_resources["Q1-1"] == expected_resources["Q1-1"]
+    assert allocation_resources["Q2-0"] == expected_resources["Q2-0"]
 
-def test_resources_consumed_by_consumers(add_consumer_request):
-    raise NotImplementedError()
 
 def test_resources_still_consumed_after_consumer_delete():
     raise NotImplementedError()
@@ -174,7 +207,7 @@ def test_can_query_consumer(add_consumer_request):
     assert len(api_get_request("consumer")) == 1
 
 def test_delete_allocation_with_consumer_forbidden(try_delete_active_allocation):
-    assert try_delete_active_allocation > 0
+    assert try_delete_active_allocation["error_count"] > 0
 
 def test_delete_active_allocation_resources_fails(try_delete_active_allocation):
     allocations = api_get_request("allocation")
@@ -182,3 +215,14 @@ def test_delete_active_allocation_resources_fails(try_delete_active_allocation):
     for alloc in q1_allocations:
         tst = api_get_request("allocation/"+str(alloc["id"])+"/resources")
         assert len(tst) == 3
+
+def test_destroy_with_consumers_fails(try_destroy_with_active_consumers):
+    assert try_destroy_with_active_consumers > 0
+
+def test_all_resources_fail_destroy_for_active_consumers(try_destroy_with_active_consumers):
+    assert len(api_get_request("resource_class")) == 3
+    assert len(api_get_request("resource_provider")) == 1
+    assert len(api_get_request("account")) == 2
+    assert len(api_get_request("resource_provider_account")) == 2
+    assert len(api_get_request("allocation")) == 2 #Q2 has no active consumers so destroyed
+    assert len(api_get_request("consumer")) == 1

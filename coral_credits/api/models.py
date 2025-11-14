@@ -100,29 +100,14 @@ class CreditAllocationResource(models.Model):
 
 class Consumer(models.Model):
     consumer_ref = models.CharField(max_length=200)
-    consumer_uuid = models.UUIDField()
-    # Should protect against deletion with on_delete=models.DO_NOTHING but means can't
-    # delete accounts with expired consumers so protected against in API instead
+    consumer_uuid = models.UUIDField(unique=True)
     resource_provider_account = models.ForeignKey(
-        ResourceProviderAccount, on_delete=models.CASCADE
+        ResourceProviderAccount, on_delete=models.SET_NULL, null=True
     )
     user_ref = models.UUIDField()
     created = models.DateTimeField(auto_now_add=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
-
-    class Meta:
-        # TODO(tylerchristie): allow either/or nullable?
-        # constraints = [
-        #     models.CheckConstraint(
-        #         check=Q(consumer_ref=False) | Q(consumer_uuid=False),
-        #         name='not_both_null'
-        #     )
-        # ]
-        unique_together = (
-            "consumer_uuid",
-            "resource_provider_account",
-        )
 
     def __str__(self) -> str:
         return (
