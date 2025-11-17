@@ -5,42 +5,63 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import uuid
+import json
+import tofu_test_data
 
 coral_uri = os.environ.get("TF_VAR_coral_uri")
 headers = {"Authorization": "Bearer " + os.environ.get("TF_VAR_auth_token")}
 
 
-def get_lease_request_json():
-    start_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-    end_time = (datetime.now() + relativedelta(months=1)).strftime("%Y-%m-%d-%H:%M:%S")
-    return {
-        "context": {
-            "user_id": "caa8b54a-eb5e-4134-8ae2-a3946a428ec7",
-            "project_id": "c2eced313b324cdb8e670e6e30bf387d",
-            "auth_url": "http://api.example.com:5000/v3",
-            "region_name": "RegionOne",
-        },
-        "lease": {
-            "id": str(uuid.uuid4()),
-            "name": "my_new_lease",
-            "start_date": start_time,
-            "end_date": end_time,
-            "reservations": [
-                {
-                    "amount": 2,
-                    "flavor_id": "e26a4241-b83d-4516-8e0e-8ce2665d1966",
-                    "resource_type": "flavor:instance",
-                    "affinity": None,
-                    "allocations": [],
-                }
-            ],
-            "resource_requests": {"DISK_GB": 35, "MEMORY_MB": 1000, "VCPU": 4},
-        },
-    }
+initial_time = datetime.now()
+def time_with_month_offset(offset):
+    return (datetime.now() + relativedelta(months=offset)).strftime("%Y-%m-%d-%H:%M:%S")
 
+q1_standard_resources = {
+    "VCPU": "40000",
+    "MEMORY_MB": "4423680",
+    "DISK_GB": "108000"
+}
 
-lease_request_json = get_lease_request_json()
+q1_extra_resources = {
+    "VCPU": "41000",
+    "MEMORY_MB": "4424680",
+    "DISK_GB": "109000"
+}
 
+q1_insufficient_resources = {
+    "VCPU": "10",
+    "MEMORY_MB": "10",
+    "DISK_GB": "10"
+}
+
+q1_st = time_with_month_offset(-2)
+q1_end = time_with_month_offset(1)
+q2_st = time_with_month_offset(12)
+q2_end = time_with_month_offset(15)
+
+standard_test_data = tofu_test_data.get_standard_test_vars(
+    q1_st,
+    q1_end,
+    q2_st,
+    q2_end,
+    q1_standard_resources
+    )
+
+updated_test_data = tofu_test_data.get_standard_test_vars(
+    q1_st,
+    q1_end,
+    q2_st,
+    q2_end,
+    q1_extra_resources
+    )
+
+empty_test_data = tofu_test_data.get_empty_test_data_copy(standard_test_data)
+try_active_delete_test_data = tofu_test_data.get_no_q1_copy(standard_test_data)
+
+lease_request_json = tofu_test_data.get_lease_request_json(
+    time_with_month_offset(-1),
+    (initial_time + relativedelta(days=1)).strftime("%Y-%m-%d-%H:%M:%S")
+    )
 
 @pytest.fixture(scope="session")
 def terraform_rest_setup():
@@ -50,11 +71,11 @@ def terraform_rest_setup():
 
     tf = Tofu(cwd=working_dir)
     tf.init()
-    tf.apply(extra_args=["--var-file=" + var_file])
+    tf.apply(variables=standard_test_data)
 
     yield tf
 
-    destroy = tf.apply(extra_args=["--var-file=" + delete_file])
+    destroy = tf.apply(variables=empty_test_data)
     assert len(destroy.errors) == 0
 
 
@@ -70,38 +91,39 @@ def add_consumer_request(terraform_rest_setup):
         },
         json=lease_request_json,
     )
-    yield dict(status=consumer.status_code, tf_workspace=terraform_rest_setup)
-
+    return dict(status=consumer.status_code, tf_workspace=terraform_rest_setup)
 
 @pytest.fixture(scope="session")
-def try_delete_active_allocation(add_consumer_request):
-    delete_file = os.path.join(
-        os.path.dirname(__file__), "..", "tests", "tofu_configs", "delete-active.tfvars"
+def update_allocation_resources(add_consumer_request):
+    workspace = add_consumer_request["tf_workspace"]
+    workspace.apply(variables=updated_test_data)
+    return dict(tf_workspace=add_consumer_request["tf_workspace"])
+
+@pytest.fixture(scope="session")
+def try_delete_active_allocation(update_allocation_resources):
+    print("Testing deleting active allocation, will see 403 errors")
+    try_delete = update_allocation_resources["tf_workspace"].apply(
+        variables = try_active_delete_test_data
     )
-    try_delete = add_consumer_request["tf_workspace"].apply(
-        extra_args=["--var-file=" + delete_file]
-    )
+    print("End of active allocation delete test")
     return dict(
         error_count=len(try_delete.errors),
-        tf_workspace=add_consumer_request["tf_workspace"],
+        tf_workspace=update_allocation_resources["tf_workspace"],
     )
 
 
 @pytest.fixture(scope="session")
 def try_destroy_with_active_consumers(try_delete_active_allocation):
-    all_file = os.path.join(
-        os.path.dirname(__file__), "..", "tests", "tofu_configs", "initial.tfvars"
-    )
-    delete_file = os.path.join(
-        os.path.dirname(__file__), "..", "tests", "tofu_configs", "empty.tfvars"
-    )
+
+    print("Testing destroy with active consumer, will see 403 errors")
     try_delete = try_delete_active_allocation["tf_workspace"].apply(
-        extra_args=["--var-file=" + delete_file]
+        variables=empty_test_data
     )
+    print("End of destroy with active consumers test")
     yield len(try_delete.errors)
     # Undo any destroys
     reapply = try_delete_active_allocation["tf_workspace"].apply(
-        extra_args=["--var-file=" + all_file]
+        variables=standard_test_data
     )
     assert len(reapply.errors) == 0
 
@@ -219,8 +241,17 @@ def test_only_allocation_resources_returned(terraform_rest_setup):
         (
             "add_consumer_request",
             {
-                # q1-0 = original - resource hours requested for a month by lease
-                "Q1-0": {"VCPU": 37120, "MEMORY_MB": 3703680, "DISK_GB": 82800},
+                # q1-0 = original - 31 days * 24 hours * lease resources
+                "Q1-0": {"VCPU": 37024, "MEMORY_MB": 3679680, "DISK_GB": 81960},
+                "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
+                "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
+            },
+        ),
+        (
+            "update_allocation_resources",
+            {
+                # q1-0 after consumption + new resources
+                "Q1-0": {"VCPU": 38024, "MEMORY_MB": 3680680, "DISK_GB": 82960},
                 "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
                 "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
             },
@@ -229,7 +260,7 @@ def test_only_allocation_resources_returned(terraform_rest_setup):
             "delete_consumer",
             {
                 # historical consumer consumption data should be preserved
-                "Q1-0": {"VCPU": 37120, "MEMORY_MB": 3703680, "DISK_GB": 82800},
+                "Q1-0": {"VCPU": 38024, "MEMORY_MB": 3680680, "DISK_GB": 82960},
                 "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
                 "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
             },
