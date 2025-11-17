@@ -82,6 +82,7 @@ class CreditAllocationResource(models.Model):
         ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
     )
     resource_hours = models.FloatField()
+    allocated_resource_hours = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

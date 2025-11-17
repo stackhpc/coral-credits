@@ -342,11 +342,15 @@ def create_credit_resource_allocations(credit_allocation, resource_allocations):
         car, created = models.CreditAllocationResource.objects.get_or_create(
             allocation=credit_allocation,
             resource_class=resource_class,
-            defaults={"resource_hours": resource_hours},
+            defaults={"resource_hours": resource_hours, "allocated_resource_hours": resource_hours},
         )
         # If exists, update:
         if not created:
-            car.resource_hours += resource_hours
+            newly_allocated_resource_hours = resource_hours
+            car.resource_hours += newly_allocated_resource_hours - car.allocated_resource_hours
+            if car.resource_hours < 0:
+                raise db_exceptions.InsufficientCredits("Cannot set credits to fewer than currently consumed")
+            car.allocated_resource_hours = newly_allocated_resource_hours
             car.save()
 
         # Refresh from db to get the updated resource_hours
