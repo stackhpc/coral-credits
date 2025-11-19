@@ -21,7 +21,7 @@ provider "restapi" {
 }
 
 module "coral_tofu" {
-    source = "git::https://github.com/stackhpc/coral-credits-tofu.git?ref=main" #TODO: move to versioned release
+    source = "git::https://github.com/stackhpc/coral-credits-tofu.git?ref=0.1.0"
     
     resource_provider_name = var.resource_provider_name
     resource_provider_email = var.resource_provider_email
