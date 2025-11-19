@@ -159,11 +159,6 @@ class AccountViewSet(viewsets.ModelViewSet):
         )
         account_summary = serializer.data
 
-        # TODO(johngarbutt) look for any during the above allocations
-
-        # ISSUE (stuartc) this creates errors if objects
-        # are actually found when the account entry
-        # is retrieved. Unable to serialise the list.
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
         allocations = serializers.CreditAllocationSerializer(
             all_allocations_query, many=True, context={"request": request}
