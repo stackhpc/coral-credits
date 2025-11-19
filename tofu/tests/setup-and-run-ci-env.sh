@@ -122,11 +122,11 @@ echo "Running additional tests..."
 
 # Set up some variables
 CONTENT_TYPE="Content-Type: application/json"
-TF_VAR_coral_uri=http://$SITE:$PORT
+export TF_VAR_coral_uri=http://$SITE:$PORT
 
 # Get a token
 echo "Getting an auth token:"
-TF_VAR_auth_token=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+export TF_VAR_auth_token=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     "{
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
@@ -134,10 +134,17 @@ TF_VAR_auth_token=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     ${TF_VAR_coral_uri}/api-token-auth/ | jq -r '.token')
 echo "Auth Token: $TF_VAR_auth_token"
 
-python -m venv venv
-source venv/bin/active
-pip install -r ${SCRIPT_DIR}/../../requirements.txt
+# Install OpenTofu
+curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh
+chmod +x install-opentofu.sh
+./install-opentofu.sh --install-method deb
+rm -f install-opentofu.sh
 
+# Install python dependencies
+pip install -r ${SCRIPT_DIR}/../../requirements.txt
+pip install -r ${SCRIPT_DIR}/../../test-requirements.txt
+
+# Run tests
 pytest ${SCRIPT_DIR}/tofu_tests.py
 
 # Scrape prometheus metrics: 
