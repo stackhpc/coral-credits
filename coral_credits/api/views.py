@@ -79,8 +79,8 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
-        # To allow for the allocation resource endpoint to operate as a single REST object
-        # with GET,POST,PATCH etc after creation of single item
+        # To allow for the allocation resource endpoint to operate as a single
+        # REST object with GET,POST,PATCH etc after creation of single item
         # When creating with multiple resources a list of multiple entries is returned,
         # each with their own unique ID
         if len(serializer.data) == 1:
@@ -161,7 +161,8 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         # TODO(johngarbutt) look for any during the above allocations
 
-        # ISSUE (stuartc) this creates errors if objects are actually found when the account entry
+        # ISSUE (stuartc) this creates errors if objects
+        # are actually found when the account entry
         # is retrieved. Unable to serialise the list.
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
         allocations = serializers.CreditAllocationSerializer(
@@ -223,12 +224,14 @@ class ConsumerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ConsumerRequestSerializer
 
-    # TODO: need to split the Consumer and ConsumerRequest logic really
+    # TODO(wtripp180901): need to split the Consumer and ConsumerRequest logic really
     def retrieve(self, request, pk=None):
         consumer = get_object_or_404(self.queryset, pk=pk)
         serializer = serializers.Consumer(consumer, context={"request": request})
         return Response(serializer.data)
 
+    # TODO(wtripp180901): this doesn't seem consistent with what's
+    # actually in the database
     def list(self, request):
         serializer = serializers.Consumer(
             self.queryset, many=True, context={"request": request}

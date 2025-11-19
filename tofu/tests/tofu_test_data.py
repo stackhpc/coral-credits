@@ -1,61 +1,65 @@
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-import uuid
-import json
 import copy
+import json
+import uuid
 
-def get_standard_test_vars(q1_start,q1_end,q2_start,q2_end,q1_0_resources):
+
+def get_standard_test_vars(q1_start, q1_end, q2_start, q2_end, q1_0_resources):
     return {
         "resource_provider_name": "Test Provider",
         "resource_provider_email": "testprovider@example.com",
         "resource_provider_info_url": "https://www.google.com",
-        "accounts": json.dumps([
-        {
-            "name": "TestAccount1",
-            "email": "testaccount1@example.com",
-            "openstack_project_id": "c2eced313b324cdb8e670e6e30bf387d"
-        },
-        {
-            "name": "TestAccount2",
-            "email": "testaccount2@example.com",
-            "openstack_project_id": "2fbf511968aa443e883a82283b0f0160"
-        }
-        ]),
-        "allocations": json.dumps({
-            "Q1": {
-                "start_date": str(q1_start),
-                "end_date": str(q1_end),
-                "projects": [
+        "accounts": json.dumps(
+            [
                 {
-                    "account_email": "testaccount1@example.com",
-                    "resources": q1_0_resources
+                    "name": "TestAccount1",
+                    "email": "testaccount1@example.com",
+                    "openstack_project_id": "c2eced313b324cdb8e670e6e30bf387d",
                 },
                 {
-                    "account_email": "testaccount2@example.com",
-                    "resources": {
-                    "VCPU": "20000",
-                    "MEMORY_MB": "2000000",
-                    "DISK_GB": "200000"
-                    }
-                }
-                ]
-            },
-            "Q2": {
-                "start_date": str(q2_start),
-                "end_date": str(q2_end),
-                "projects": [
-                {
-                    "account_email": "testaccount1@example.com",
-                    "resources": {
-                    "VCPU": "80000",
-                    "MEMORY_MB": "8000000",
-                    "DISK_GB": "300000"
-                    }
-                }
-                ]
+                    "name": "TestAccount2",
+                    "email": "testaccount2@example.com",
+                    "openstack_project_id": "2fbf511968aa443e883a82283b0f0160",
+                },
+            ]
+        ),
+        "allocations": json.dumps(
+            {
+                "Q1": {
+                    "start_date": str(q1_start),
+                    "end_date": str(q1_end),
+                    "projects": [
+                        {
+                            "account_email": "testaccount1@example.com",
+                            "resources": q1_0_resources,
+                        },
+                        {
+                            "account_email": "testaccount2@example.com",
+                            "resources": {
+                                "VCPU": "20000",
+                                "MEMORY_MB": "2000000",
+                                "DISK_GB": "200000",
+                            },
+                        },
+                    ],
+                },
+                "Q2": {
+                    "start_date": str(q2_start),
+                    "end_date": str(q2_end),
+                    "projects": [
+                        {
+                            "account_email": "testaccount1@example.com",
+                            "resources": {
+                                "VCPU": "80000",
+                                "MEMORY_MB": "8000000",
+                                "DISK_GB": "300000",
+                            },
+                        }
+                    ],
+                },
             }
-        })
+        ),
     }
+
 
 def get_empty_test_data_copy(data):
     tmp = copy.deepcopy(data)
@@ -63,12 +67,14 @@ def get_empty_test_data_copy(data):
     tmp["accounts"] = "[]"
     return tmp
 
+
 def get_no_q1_copy(data):
     tmp = copy.deepcopy(data)
     tmp["allocations"] = json.dumps({"Q2": json.loads(tmp["allocations"])["Q2"]})
     return tmp
 
-def get_lease_request_json(start,end):
+
+def get_lease_request_json(start, end):
     start_time = start
     end_time = end
     return {

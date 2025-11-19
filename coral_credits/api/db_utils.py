@@ -70,10 +70,9 @@ def get_all_active_reservations(resource_provider_account):
 
 
 def get_credit_allocation(id):
-    now = timezone.now()
 
     credit_allocation = models.CreditAllocation.objects.filter(id=id).first()
-    if credit_allocation == None:
+    if credit_allocation is None:
         raise db_exceptions.NoCreditAllocation("Invalid allocation_id")
 
     return credit_allocation
@@ -342,14 +341,21 @@ def create_credit_resource_allocations(credit_allocation, resource_allocations):
         car, created = models.CreditAllocationResource.objects.get_or_create(
             allocation=credit_allocation,
             resource_class=resource_class,
-            defaults={"resource_hours": resource_hours, "allocated_resource_hours": resource_hours},
+            defaults={
+                "resource_hours": resource_hours,
+                "allocated_resource_hours": resource_hours,
+            },
         )
         # If exists, update:
         if not created:
             newly_allocated_resource_hours = resource_hours
-            car.resource_hours += newly_allocated_resource_hours - car.allocated_resource_hours
+            car.resource_hours += (
+                newly_allocated_resource_hours - car.allocated_resource_hours
+            )
             if car.resource_hours < 0:
-                raise db_exceptions.InsufficientCredits("Cannot set credits to fewer than currently consumed")
+                raise db_exceptions.InsufficientCredits(
+                    "Cannot set credits to fewer than currently consumed"
+                )
             car.allocated_resource_hours = newly_allocated_resource_hours
             car.save()
 

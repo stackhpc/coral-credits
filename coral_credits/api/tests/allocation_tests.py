@@ -31,8 +31,8 @@ def test_credit_allocation_resource_create_success(
     response = api_client.post(url, request_data, format="json", secure=True)
 
     # Check that the request was successful
-    assert response.status_code == status.HTTP_200_OK, (
-        f"Expected {status.HTTP_200_OK}. "
+    assert response.status_code == status.HTTP_201_CREATED, (
+        f"Expected {status.HTTP_201_CREATED}. "
         f"Actual status {response.status_code}. "
         f"Response text {response.content}"
     )

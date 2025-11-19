@@ -1,39 +1,27 @@
-import pytest
-from tofupy import Tofu
-import requests
-import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import uuid
-import json
+import os
+import pytest
+import requests
 import tofu_test_data
-import time
+from tofupy import Tofu
 
 coral_uri = os.environ.get("TF_VAR_coral_uri")
 headers = {"Authorization": "Bearer " + os.environ.get("TF_VAR_auth_token")}
 
 
 initial_time = datetime.now()
+
+
 def time_with_days_offset(offset):
     return (datetime.now() + relativedelta(days=offset)).strftime("%Y-%m-%d-%H:%M:%S")
 
-q1_standard_resources = {
-    "VCPU": "40000",
-    "MEMORY_MB": "4423680",
-    "DISK_GB": "108000"
-}
 
-q1_extra_resources = {
-    "VCPU": "41000",
-    "MEMORY_MB": "4424680",
-    "DISK_GB": "109000"
-}
+q1_standard_resources = {"VCPU": "40000", "MEMORY_MB": "4423680", "DISK_GB": "108000"}
 
-q1_insufficient_resources = {
-    "VCPU": "10",
-    "MEMORY_MB": "10",
-    "DISK_GB": "10"
-}
+q1_extra_resources = {"VCPU": "41000", "MEMORY_MB": "4424680", "DISK_GB": "109000"}
+
+q1_insufficient_resources = {"VCPU": "10", "MEMORY_MB": "10", "DISK_GB": "10"}
 
 q1_st = time_with_days_offset(-60)
 q1_end = time_with_days_offset(30)
@@ -41,36 +29,24 @@ q2_st = time_with_days_offset(360)
 q2_end = time_with_days_offset(450)
 
 standard_test_data = tofu_test_data.get_standard_test_vars(
-    q1_st,
-    q1_end,
-    q2_st,
-    q2_end,
-    q1_standard_resources
-    )
+    q1_st, q1_end, q2_st, q2_end, q1_standard_resources
+)
 
 updated_test_data = tofu_test_data.get_standard_test_vars(
-    q1_st,
-    q1_end,
-    q2_st,
-    q2_end,
-    q1_extra_resources
-    )
+    q1_st, q1_end, q2_st, q2_end, q1_extra_resources
+)
 
 insufficient_creds_data = tofu_test_data.get_standard_test_vars(
-    q1_st,
-    q1_end,
-    q2_st,
-    q2_end,
-    q1_insufficient_resources
-    )
+    q1_st, q1_end, q2_st, q2_end, q1_insufficient_resources
+)
 
 empty_test_data = tofu_test_data.get_empty_test_data_copy(standard_test_data)
 try_active_delete_test_data = tofu_test_data.get_no_q1_copy(standard_test_data)
 
 lease_request_json = tofu_test_data.get_lease_request_json(
-    time_with_days_offset(-30),
-    time_with_days_offset(1)
-    )
+    time_with_days_offset(-30), time_with_days_offset(1)
+)
+
 
 @pytest.fixture(scope="session")
 def terraform_rest_setup():
@@ -100,14 +76,20 @@ def add_consumer_request(terraform_rest_setup):
         json=lease_request_json,
     )
     resources = get_current_allocation_resources()
-    return dict(status=consumer.status_code, tf_workspace=terraform_rest_setup["tf_workspace"],resources=resources)
+    return dict(
+        status=consumer.status_code,
+        tf_workspace=terraform_rest_setup["tf_workspace"],
+        resources=resources,
+    )
+
 
 @pytest.fixture(scope="session")
 def update_allocation_resources(add_consumer_request):
     workspace = add_consumer_request["tf_workspace"]
     workspace.apply(variables=updated_test_data)
     resources = get_current_allocation_resources()
-    return dict(tf_workspace=workspace,resources=resources)
+    return dict(tf_workspace=workspace, resources=resources)
+
 
 @pytest.fixture(scope="session")
 def try_update_with_insufficient_creds(update_allocation_resources):
@@ -116,20 +98,25 @@ def try_update_with_insufficient_creds(update_allocation_resources):
     apply = workspace.apply(variables=insufficient_creds_data)
     print("Insufficient credits test end")
     resources = get_current_allocation_resources()
-    return dict(tf_workspace=update_allocation_resources["tf_workspace"],error_count=len(apply.errors),resources=resources)
+    return dict(
+        tf_workspace=update_allocation_resources["tf_workspace"],
+        error_count=len(apply.errors),
+        resources=resources,
+    )
+
 
 @pytest.fixture(scope="session")
 def try_delete_active_allocation(try_update_with_insufficient_creds):
     print("Testing deleting active allocation, will see 403 errors")
     try_delete = try_update_with_insufficient_creds["tf_workspace"].apply(
-        variables = try_active_delete_test_data
+        variables=try_active_delete_test_data
     )
     print("End of active allocation delete test")
     resources = get_current_allocation_resources()
     return dict(
         error_count=len(try_delete.errors),
         tf_workspace=try_update_with_insufficient_creds["tf_workspace"],
-        resources=resources
+        resources=resources,
     )
 
 
@@ -252,6 +239,7 @@ def test_only_allocation_resources_returned(terraform_rest_setup):
 def test_insufficient_creds_update(try_update_with_insufficient_creds):
     assert try_update_with_insufficient_creds["error_count"] > 1
 
+
 def get_current_allocation_resources():
     allocations = api_get_request("allocation")
     return {
@@ -260,6 +248,7 @@ def get_current_allocation_resources():
         )
         for a in allocations
     }
+
 
 @pytest.mark.parametrize(
     "fixture_name, expected_resources",
@@ -314,7 +303,7 @@ def test_resource_allocations_have_correct_resources(
     request, fixture_name, expected_resources
 ):
     allocation_resources = request.getfixturevalue(fixture_name)["resources"]
-    
+
     assert allocation_resources["Q1-0"] == expected_resources["Q1-0"]
     assert allocation_resources["Q1-1"] == expected_resources["Q1-1"]
     assert allocation_resources["Q2-0"] == expected_resources["Q2-0"]

@@ -98,16 +98,19 @@ def create_credit_allocation_resources():
             allocation=credit_allocation,
             resource_class=vcpu,
             resource_hours=allocation_hours["VCPU"],
+            allocated_resource_hours=allocation_hours["VCPU"],
         )
         memory_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=memory,
             resource_hours=allocation_hours["MEMORY_MB"],
+            allocated_resource_hours=allocation_hours["VCPU"],
         )
         disk_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=disk,
             resource_hours=allocation_hours["DISK_GB"],
+            allocated_resource_hours=allocation_hours["VCPU"],
         )
         return (vcpu_allocation, memory_allocation, disk_allocation)
 
