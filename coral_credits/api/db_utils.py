@@ -1,4 +1,5 @@
 import logging
+import math
 import uuid
 
 from django.shortcuts import get_object_or_404
@@ -311,10 +312,9 @@ def spend_credits(
         )
         # Subtract expenditure from CreditAllocationResource
         # Or add, if the update delta is < 0
-        credit_allocations[resource_class].resource_hours = round(
+        credit_allocations[resource_class].resource_hours = math.ceil(
             credit_allocations[resource_class].resource_hours
-            - resource_requests[resource_class],
-            0,
+            - resource_requests[resource_class]
         )
         credit_allocations[resource_class].save()
 

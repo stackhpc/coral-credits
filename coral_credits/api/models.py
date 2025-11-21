@@ -81,8 +81,8 @@ class CreditAllocationResource(models.Model):
     resource_class = models.ForeignKey(
         ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
     )
-    resource_hours = models.FloatField()
-    allocated_resource_hours = models.FloatField()
+    resource_hours = models.IntegerField()
+    allocated_resource_hours = models.IntegerField()
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -124,7 +124,7 @@ class ResourceConsumptionRecord(models.Model):
     resource_class = models.ForeignKey(
         ResourceClass, on_delete=models.DO_NOTHING, related_name="+"
     )
-    resource_hours = models.FloatField()
+    resource_hours = models.IntegerField()
 
     class Meta:
         unique_together = (
