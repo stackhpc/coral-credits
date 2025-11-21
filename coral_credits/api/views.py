@@ -72,10 +72,13 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
             # Invalid resource_hours format.
             return _http_403_forbidden(repr(e))
 
-        # TODO(tylerchristie) any exceptions this could throw?
-        updated_allocations = db_utils.create_credit_resource_allocations(
-            allocation, allocations
-        )
+        try:
+            updated_allocations = db_utils.create_credit_resource_allocations(
+                allocation, allocations
+            )
+        except db_exceptions.InsufficientCredits as e:
+            return _http_400_bad_request(repr(e))
+        
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
@@ -384,6 +387,12 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             consumer_create_request.current_lease,
         )
 
+
+def _http_400_bad_request(msg):
+    return Response(
+        {"error": msg},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 def _http_403_forbidden(msg):
     return Response(
