@@ -293,8 +293,12 @@ def get_current_allocation_resources():
             {
                 # historical consumption data
                 # + unused extra day's worth of resources
-                # - hour rounded up from delay in calling datetime.now
-                "Q1-0": {"VCPU": 38119, "MEMORY_MB": 3704679, "DISK_GB": 83799},
+                # - tolerance for delay in calling datetime.now
+                "Q1-0": {
+                    "VCPU": pytest.approx(38120, abs=1),
+                    "MEMORY_MB": pytest.approx(3704680, abs=2),
+                    "DISK_GB": pytest.approx(83800, abs=1),
+                },
                 "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
                 "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
             },
