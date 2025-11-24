@@ -78,7 +78,7 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
             )
         except db_exceptions.InsufficientCredits as e:
             return _http_400_bad_request(repr(e))
-        
+
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
@@ -393,6 +393,7 @@ def _http_400_bad_request(msg):
         {"error": msg},
         status=status.HTTP_400_BAD_REQUEST,
     )
+
 
 def _http_403_forbidden(msg):
     return Response(

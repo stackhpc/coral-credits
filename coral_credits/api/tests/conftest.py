@@ -21,6 +21,7 @@ def pytest_configure(config):
     config.END_EARLY_DATE = config.START_DATE + timedelta(days=0.75)
     config.END_LATE_DATE = config.START_DATE + timedelta(days=1.5)
     config.START_EARLY_DATE = config.START_DATE + timedelta(days=-0.75)
+    config.UPCOMING_START_DATE = config.START_DATE + timedelta(days=0.5)
 
 
 # Get auth token
@@ -188,6 +189,12 @@ def flavor_request_data(base_request_data):
         },
     }
     return deep_merge(base_request_data, flavor_data)
+
+
+@pytest.fixture
+def flavor_upcoming_data(flavor_request_data, request):
+    data = {"lease": {"start_date": request.config.UPCOMING_START_DATE.isoformat()}}
+    return deep_merge(flavor_request_data, data)
 
 
 @pytest.fixture

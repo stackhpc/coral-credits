@@ -291,8 +291,10 @@ def get_current_allocation_resources():
         (
             "delete_consumer",
             {
-                # historical consumption data + unused extra day's worth of resources
-                "Q1-0": {"VCPU": 38120, "MEMORY_MB": 3704680, "DISK_GB": 83800},
+                # historical consumption data
+                # + unused extra day's worth of resources
+                # - hour rounded up from delay in calling datetime.now
+                "Q1-0": {"VCPU": 38119, "MEMORY_MB": 3704679, "DISK_GB": 83799},
                 "Q1-1": {"VCPU": 20000, "MEMORY_MB": 2000000, "DISK_GB": 200000},
                 "Q2-0": {"VCPU": 80000, "MEMORY_MB": 8000000, "DISK_GB": 300000},
             },

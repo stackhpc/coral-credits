@@ -178,15 +178,7 @@ def get_resource_requests(lease, current_resource_requests=None):
     ) in lease.resource_requests.resources.items():
         resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
         try:
-            # Keep it simple, ust take min for now
-            # TODO(tylerchristie): check we can allocate max
-            # CreditAllocationResource is a record of the number of resource_hours
-            # available for one unit of a ResourceClass, so we multiply
-            # lease_duration by units required.
-            requested_resource_hours = round(
-                float(amount) * lease.duration,
-                1,
-            )
+            requested_resource_hours = float(amount) * lease.duration
             LOG.info(
                 f"for {resource_class} - current: {current_resource_requests}, "
                 f"new: {requested_resource_hours}"
@@ -211,7 +203,7 @@ def get_resource_requests(lease, current_resource_requests=None):
                 f"duration: {lease.duration}}}"
             )
 
-            resource_requests[resource_class] = delta_resource_hours
+            resource_requests[resource_class] = math.ceil(delta_resource_hours)
 
         except KeyError:
             raise db_exceptions.ResourceRequestFormatError(
