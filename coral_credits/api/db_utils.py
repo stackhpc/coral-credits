@@ -1,4 +1,5 @@
 import logging
+import math
 import uuid
 
 from django.shortcuts import get_object_or_404
@@ -70,13 +71,11 @@ def get_all_active_reservations(resource_provider_account):
 
 
 def get_credit_allocation(id):
-    now = timezone.now()
-    try:
-        credit_allocation = models.CreditAllocation.objects.filter(
-            id=id, start__lte=now, end__gte=now
-        ).first()
-    except models.CreditAllocation.DoesNotExist:
+
+    credit_allocation = models.CreditAllocation.objects.filter(id=id).first()
+    if credit_allocation is None:
         raise db_exceptions.NoCreditAllocation("Invalid allocation_id")
+
     return credit_allocation
 
 
@@ -179,15 +178,7 @@ def get_resource_requests(lease, current_resource_requests=None):
     ) in lease.resource_requests.resources.items():
         resource_class = get_object_or_404(models.ResourceClass, name=resource_type)
         try:
-            # Keep it simple, ust take min for now
-            # TODO(tylerchristie): check we can allocate max
-            # CreditAllocationResource is a record of the number of resource_hours
-            # available for one unit of a ResourceClass, so we multiply
-            # lease_duration by units required.
-            requested_resource_hours = round(
-                float(amount) * lease.duration,
-                1,
-            )
+            requested_resource_hours = float(amount) * lease.duration
             LOG.info(
                 f"for {resource_class} - current: {current_resource_requests}, "
                 f"new: {requested_resource_hours}"
@@ -212,7 +203,7 @@ def get_resource_requests(lease, current_resource_requests=None):
                 f"duration: {lease.duration}}}"
             )
 
-            resource_requests[resource_class] = delta_resource_hours
+            resource_requests[resource_class] = math.ceil(delta_resource_hours)
 
         except KeyError:
             raise db_exceptions.ResourceRequestFormatError(
@@ -313,10 +304,9 @@ def spend_credits(
         )
         # Subtract expenditure from CreditAllocationResource
         # Or add, if the update delta is < 0
-        credit_allocations[resource_class].resource_hours = round(
+        credit_allocations[resource_class].resource_hours = math.ceil(
             credit_allocations[resource_class].resource_hours
-            - resource_requests[resource_class],
-            0,
+            - resource_requests[resource_class]
         )
         credit_allocations[resource_class].save()
 
@@ -343,11 +333,22 @@ def create_credit_resource_allocations(credit_allocation, resource_allocations):
         car, created = models.CreditAllocationResource.objects.get_or_create(
             allocation=credit_allocation,
             resource_class=resource_class,
-            defaults={"resource_hours": resource_hours},
+            defaults={
+                "resource_hours": resource_hours,
+                "allocated_resource_hours": resource_hours,
+            },
         )
         # If exists, update:
         if not created:
-            car.resource_hours += resource_hours
+            newly_allocated_resource_hours = resource_hours
+            car.resource_hours += (
+                newly_allocated_resource_hours - car.allocated_resource_hours
+            )
+            if car.resource_hours < 0:
+                raise db_exceptions.InsufficientCredits(
+                    "Cannot set credits to fewer than currently consumed"
+                )
+            car.allocated_resource_hours = newly_allocated_resource_hours
             car.save()
 
         # Refresh from db to get the updated resource_hours

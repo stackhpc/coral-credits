@@ -36,3 +36,8 @@ jobs:
     needs: [publish_images]
     uses: ./.github/workflows/functional.yaml
     if: github.repository == 'stackhpc/coral-credits'
+  
+  tofu_tests:
+    needs: [publish_images]
+    uses: ./.github/workflows/tofu.yaml
+    if: github.repository == 'stackhpc/coral-credits'

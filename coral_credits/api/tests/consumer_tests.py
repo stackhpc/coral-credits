@@ -112,7 +112,7 @@ def test_flavor_create_request(
     [
         (
             {"VCPU": 96.0, "MEMORY_MB": 24000.0, "DISK_GB": 840.0},
-            lazy_fixture("flavor_request_data"),
+            lazy_fixture("flavor_upcoming_data"),
         ),
     ],
 )
@@ -205,16 +205,18 @@ def test_flavor_delete_current_request(
             resource_class=resource_class.id
         ).first()
         assert c.resource_hours == pytest.approx(
-            allocation_hours[resource_class.name] * 0.25
+            allocation_hours[resource_class.name] * 0.25, abs=1
         )
 
     # Check consumption records are correct
+    # +- 1 resource hours to account for being slightly over an hour when
+    # delete request calls datetime.now which gets ceiled to the next hour
     for resource_class in resource_classes:
         rcr = models.ResourceConsumptionRecord.objects.get(
             consumer=new_consumer, resource_class=resource_class.id
         )
         assert rcr.resource_hours == pytest.approx(
-            allocation_hours[resource_class.name] * 0.75, 0.5
+            allocation_hours[resource_class.name] * 0.75, 0.5, abs=1
         )
 
 

@@ -16,18 +16,39 @@ from coral_credits.api import db_exceptions, db_utils, models, serializers
 LOG = logging.getLogger(__name__)
 
 
+def destroy_if_no_active_consumers(linked_consumers_queryset, request, destroy_super):
+
+    current_time = make_aware(datetime.now())
+    for consumer in linked_consumers_queryset:
+        if current_time < consumer.end:
+            return _http_403_forbidden(repr(db_exceptions.ActiveConsumersInAllocation))
+    else:
+        return destroy_super.destroy(request)
+
+
 class CreditAllocationViewSet(viewsets.ModelViewSet):
     queryset = models.CreditAllocation.objects.all()
     serializer_class = serializers.CreditAllocationSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def destroy(self, request, pk=None):
+        allocation = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=allocation.account.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 
 class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
-    queryset = models.CreditAllocationResource.objects.all()
     serializer_class = serializers.CreditAllocationResourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, allocation_pk=None):
+    def get_queryset(self):
+        return models.CreditAllocationResource.objects.filter(
+            allocation__pk=self.kwargs["allocation_pk"]
+        )
+
+    def _create_update_credit_allocations(self, request, allocation_pk):
         """Allocate credits to a dictionary of resource classes.
 
         Example Request:
@@ -51,14 +72,37 @@ class CreditAllocationResourceViewSet(viewsets.ModelViewSet):
             # Invalid resource_hours format.
             return _http_403_forbidden(repr(e))
 
-        # TODO(tylerchristie) any exceptions this could throw?
-        updated_allocations = db_utils.create_credit_resource_allocations(
-            allocation, allocations
-        )
+        try:
+            updated_allocations = db_utils.create_credit_resource_allocations(
+                allocation, allocations
+            )
+        except db_exceptions.InsufficientCredits as e:
+            return _http_400_bad_request(repr(e))
+
         serializer = serializers.CreditAllocationResourceSerializer(
             updated_allocations, many=True, context={"request": request}
         )
-        return _http_200_ok(serializer.data)
+        # To allow for the allocation resource endpoint to operate as a single
+        # REST object with GET,POST,PATCH etc after creation of single item
+        # When creating with multiple resources a list of multiple entries is returned,
+        # each with their own unique ID
+        if len(serializer.data) == 1:
+            return Response(serializer.data[0], status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def create(self, request, allocation_pk=None):
+        return self._create_update_credit_allocations(request, allocation_pk)
+
+    def update(self, request, allocation_pk=None, pk=None):
+        return self._create_update_credit_allocations(request, allocation_pk)
+
+    def destroy(self, request, allocation_pk=None, pk=None):
+        resource = get_object_or_404(self.get_queryset(), pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=resource.allocation.account.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
     def _validate_request(self, request):
 
@@ -82,11 +126,25 @@ class ResourceProviderViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ResourceProviderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def destroy(self, request, pk=None):
+        rpa = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__pk=rpa.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
+
 
 class ResourceProviderAccountViewSet(viewsets.ModelViewSet):
     queryset = models.ResourceProviderAccount.objects.all()
     serializer_class = serializers.ResourceProviderAccountSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def destroy(self, request, pk=None):
+        provider = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__provider__pk=provider.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -104,14 +162,15 @@ class AccountViewSet(viewsets.ModelViewSet):
         )
         account_summary = serializer.data
 
-        # TODO(johngarbutt) look for any during the above allocations
         all_allocations_query = models.CreditAllocation.objects.filter(account__pk=pk)
         allocations = serializers.CreditAllocationSerializer(
-            all_allocations_query, many=True
+            all_allocations_query, many=True, context={"request": request}
         )
 
         # TODO(johngarbutt) look for any during the above allocations
-        consumers_query = models.Consumer.objects.filter(account__pk=pk)
+        consumers_query = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=pk
+        )
         consumers = serializers.Consumer(
             consumers_query, many=True, context={"request": request}
         )
@@ -119,9 +178,19 @@ class AccountViewSet(viewsets.ModelViewSet):
         account_summary["allocations"] = allocations.data
         account_summary["consumers"] = consumers.data
 
+        all_allocation_resources_query = models.CreditAllocationResource.objects.filter(
+            allocation__account__pk=pk
+        )
         # add resource_hours_remaining... must be a better way!
         # TODO(johngarbut) we don't check the dates line up!!
         for allocation in account_summary["allocations"]:
+            resources_for_allocation_query = all_allocation_resources_query.filter(
+                allocation__id=allocation["id"]
+            )
+            resources_for_allocation = serializers.CreditAllocationResourceSerializer(
+                resources_for_allocation_query, many=True, context={"request": request}
+            )
+            allocation["resources"] = resources_for_allocation.data
             for resource_allocation in allocation["resources"]:
                 if "resource_hours_remaining" not in resource_allocation:
                     resource_allocation["resource_hours_remaining"] = (
@@ -140,11 +209,32 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response(account_summary)
 
+    def destroy(self, request, pk=None):
+        account = get_object_or_404(self.queryset, pk=pk)
+        linked_consumers = models.Consumer.objects.filter(
+            resource_provider_account__account__pk=account.pk
+        )
+        return destroy_if_no_active_consumers(linked_consumers, request, super())
+
 
 class ConsumerViewSet(viewsets.ModelViewSet):
     queryset = models.Consumer.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ConsumerRequestSerializer
+
+    # TODO(wtripp180901): need to split the Consumer and ConsumerRequest logic really
+    def retrieve(self, request, pk=None):
+        consumer = get_object_or_404(self.queryset, pk=pk)
+        serializer = serializers.Consumer(consumer, context={"request": request})
+        return Response(serializer.data)
+
+    # TODO(wtripp180901): this doesn't seem consistent with what's
+    # actually in the database
+    def list(self, request):
+        serializer = serializers.Consumer(
+            self.queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
     @action(detail=False, methods=["post"], url_path="create")
     def create_consumer(self, request):
@@ -296,6 +386,13 @@ class ConsumerViewSet(viewsets.ModelViewSet):
             consumer_create_request.lease,
             consumer_create_request.current_lease,
         )
+
+
+def _http_400_bad_request(msg):
+    return Response(
+        {"error": msg},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 def _http_403_forbidden(msg):

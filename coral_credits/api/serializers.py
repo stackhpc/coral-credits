@@ -46,7 +46,7 @@ class CreditAllocationResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CreditAllocationResource
-        fields = ["resource_class", "resource_hours"]
+        fields = ["id", "resource_class", "resource_hours", "allocated_resource_hours"]
 
     def to_representation(self, instance):
         """Pass the context to the ResourceClassSerializer"""
@@ -73,12 +73,19 @@ class ResourceConsumptionRecord(serializers.ModelSerializer):
 
 
 class Consumer(serializers.ModelSerializer):
-    resource_provider = ResourceProviderSerializer()
+    resource_provider_account = ResourceProviderAccountSerializer()
     resources = ResourceConsumptionRecord(many=True)
 
     class Meta:
         model = models.Consumer
-        fields = ["consumer_ref", "resource_provider", "start", "end", "resources"]
+        fields = [
+            "id",
+            "consumer_ref",
+            "resource_provider_account",
+            "start",
+            "end",
+            "resources",
+        ]
 
 
 class ResourceRequestSerializer(serializers.Serializer):

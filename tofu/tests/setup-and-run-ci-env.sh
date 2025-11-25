@@ -122,122 +122,30 @@ echo "Running additional tests..."
 
 # Set up some variables
 CONTENT_TYPE="Content-Type: application/json"
+export TF_VAR_coral_uri=http://$SITE:$PORT
 
 # Get a token
 echo "Getting an auth token:"
-TOKEN=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
+export TF_VAR_auth_token=$(curl -s -X POST -H "$CONTENT_TYPE" -d \
     "{
         \"username\": \"admin\", 
         \"password\": \"$TEST_PASSWORD\"
     }" \
-    http://$SITE:$PORT/api-token-auth/ | jq -r '.token')
-echo "Auth Token: $TOKEN"
+    ${TF_VAR_coral_uri}/api-token-auth/ | jq -r '.token')
+echo "Auth Token: $TF_VAR_auth_token"
 
-AUTH_HEADER="Authorization: Bearer $TOKEN"
+# Install OpenTofu
+curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh
+chmod +x install-opentofu.sh
+./install-opentofu.sh --install-method deb
+rm -f install-opentofu.sh
 
-# 1. Add a resource provider
-echo "Adding a resource provider:"
-RESOURCE_PROVIDER_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
-    '{
-        "name": "Test Provider", 
-        "email": "provider@test.com",
-        "info_url": "http://testprovider.com"
-    }' \
-    http://$SITE:$PORT/resource_provider/ | jq -r '.url')
-echo "Resource Provider URL: $RESOURCE_PROVIDER_ID"
+# Install python dependencies
+pip install -r ${SCRIPT_DIR}/../../requirements.txt
+pip install -r ${SCRIPT_DIR}/../../test-requirements.txt
 
-# 2. Add resource classes
-echo "Adding resource classes:"
-VCPU_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "VCPU"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-MEMORY_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "MEMORY_MB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-DISK_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d '{"name": "DISK_GB"}' http://$SITE:$PORT/resource_class/ | jq -r '.id')
-echo "Resource Class IDs: VCPU=$VCPU_ID, MEMORY_MB=$MEMORY_ID, DISK_GB=$DISK_ID"
-
-# 3. Add an account
-echo "Adding an account:"
-ACCOUNT_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
-    '{
-        "name": "Test Account", 
-        "email": "test@account.com"
-    }' \
-    http://$SITE:$PORT/account/ | jq -r '.url')
-echo "Account URL: $ACCOUNT_ID"
-
-PROJECT_ID="20354d7a-e4fe-47af-8ff6-187bca92f3f9"
-# 4. Add a resource provider account 
-echo "Adding a resource provider account:"
-RPA_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
-    "{
-        \"account\": \"$ACCOUNT_ID\", 
-        \"provider\": \"$RESOURCE_PROVIDER_ID\", 
-        \"project_id\": \"$PROJECT_ID\"
-    }" \
-    http://$SITE:$PORT/resource_provider_account/| jq -r '.id')
-echo "Resource Provider Account ID: $RPA_ID"
-
-START_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-END_DATE=$(date -u -d "+1 day" +"%Y-%m-%dT%H:%M:%SZ")
-# 5. Add some credit allocation
-echo "Adding credit allocation:"
-ALLOCATION_ID=$(curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
-    "{
-        \"name\": \"Test Allocation\", 
-        \"account\": \"$ACCOUNT_ID\",
-        \"start\": \"$START_DATE\", 
-        \"end\": \"$END_DATE\"
-    }" \
-    http://$SITE:$PORT/allocation/ | jq -r '.id')
-echo "Credit Allocation ID: $ALLOCATION_ID"
-
-# 6. Add allocation to resource
-echo "Adding allocation to resources:"
-curl -s -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d \
-    "{
-        \"VCPU\": 100,
-        \"MEMORY_MB\": 24000,
-        \"DISK_GB\": 5000
-    }" \
-    http://$SITE:$PORT/allocation/$ALLOCATION_ID/resources/
-
-# 7. Do a consumer create (this request mimics what Blazar sends to its 
-#    [enforcement].external_service_commit_create_endpoint when creating
-#    a lease)
-echo "Creating a consumer:"
-RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "$AUTH_HEADER" -H "$CONTENT_TYPE" -d "{
-        \"context\": {
-            \"user_id\": \"caa8b54a-eb5e-4134-8ae2-a3946a428ec7\",
-            \"project_id\": \"$PROJECT_ID\",
-            \"auth_url\": \"http://api.example.com:5000/v3\",
-            \"region_name\": \"RegionOne\"
-        },
-        \"lease\": {
-            \"id\": \"e96b5a17-ada0-4034-a5ea-34db024b8e04\",
-            \"name\": \"my_new_lease\",
-            \"start_date\": \"$START_DATE\",
-            \"end_date\": \"$END_DATE\",
-            \"reservations\": [
-                {   \"amount\": \"2\",
-                    \"flavor_id\": \"e26a4241-b83d-4516-8e0e-8ce2665d1966\", 
-                    \"resource_type\": \"flavor:instance\",
-                    \"affinity\" : \"None\",
-                    \"allocations\": []
-                }
-            ],
-            \"resource_requests\": {
-                \"DISK_GB\": 35,
-                \"MEMORY_MB\": 1000,
-                \"VCPU\": 4
-            }
-        }
-    }" \
-    http://$SITE:$PORT/consumer/create)
-
-if [ "$RESPONSE" -eq 204 ]; then
-		echo "All tests completed."
-	else
-		echo "Error: Expected HTTP status code 204, but got $RESPONSE"
-		exit 1
-	fi
+# Run tests
+pytest ${SCRIPT_DIR}/tofu_tests.py
 
 # Scrape prometheus metrics: 
 kubectl port-forward -n $NAMESPACE svc/$RELEASE_NAME $METRICS_PORT:$METRICS_PORT &

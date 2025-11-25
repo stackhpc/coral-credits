@@ -21,6 +21,7 @@ def pytest_configure(config):
     config.END_EARLY_DATE = config.START_DATE + timedelta(days=0.75)
     config.END_LATE_DATE = config.START_DATE + timedelta(days=1.5)
     config.START_EARLY_DATE = config.START_DATE + timedelta(days=-0.75)
+    config.UPCOMING_START_DATE = config.START_DATE + timedelta(days=0.5)
 
 
 # Get auth token
@@ -98,16 +99,19 @@ def create_credit_allocation_resources():
             allocation=credit_allocation,
             resource_class=vcpu,
             resource_hours=allocation_hours["VCPU"],
+            allocated_resource_hours=allocation_hours["VCPU"],
         )
         memory_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=memory,
             resource_hours=allocation_hours["MEMORY_MB"],
+            allocated_resource_hours=allocation_hours["MEMORY_MB"],
         )
         disk_allocation = models.CreditAllocationResource.objects.create(
             allocation=credit_allocation,
             resource_class=disk,
             resource_hours=allocation_hours["DISK_GB"],
+            allocated_resource_hours=allocation_hours["DISK_GB"],
         )
         return (vcpu_allocation, memory_allocation, disk_allocation)
 
@@ -185,6 +189,12 @@ def flavor_request_data(base_request_data):
         },
     }
     return deep_merge(base_request_data, flavor_data)
+
+
+@pytest.fixture
+def flavor_upcoming_data(flavor_request_data, request):
+    data = {"lease": {"start_date": request.config.UPCOMING_START_DATE.isoformat()}}
+    return deep_merge(flavor_request_data, data)
 
 
 @pytest.fixture
