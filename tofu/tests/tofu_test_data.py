@@ -68,9 +68,11 @@ def get_empty_test_data_copy(data):
     return tmp
 
 
-def get_no_q1_copy(data):
+def get_no_q1_0_copy(data):
     tmp = copy.deepcopy(data)
-    tmp["allocations"] = json.dumps({"Q2": json.loads(tmp["allocations"])["Q2"]})
+    allocations = json.loads(tmp["allocations"])
+    allocations["Q1"]["projects"].pop(0)
+    tmp["allocations"] = json.dumps(allocations)
     return tmp
 
 
